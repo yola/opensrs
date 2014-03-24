@@ -1,6 +1,6 @@
 import re
 
-from setuptools import setup
+from setuptools import find_packages, setup
 
 init_py = open('opensrs/__init__.py').read()
 metadata = dict(re.findall("__([a-z]+)__ = '([^']+)'", init_py))
@@ -13,5 +13,5 @@ setup(
     author_email='engineers@yola.com',
     license='MIT (Expat)',
     url=metadata['url'],
-    packages=['opensrs']
+    packages=find_packages()
 )
