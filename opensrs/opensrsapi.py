@@ -1,7 +1,9 @@
+from functools import update_wrapper
 import logging
 
-import errors
-from xcp import XCPMessage, XCPChannel
+from opensrs import errors
+from opensrs.xcp import XCPMessage, XCPChannel
+
 
 log = logging.getLogger(__name__)
 
@@ -204,6 +206,7 @@ class OpenSRS(object):
         return self._req(action='GET', object='DOMAIN', cookie=cookie,
                          attributes={'type': type})
 
+    @transform_auth_failure_into_not_found
     def _set_domain_whois_privacy(self, cookie, privacy):
         attributes = {
             'data': 'whois_privacy_state',
@@ -430,8 +433,8 @@ class OpenSRS(object):
         return True
 
     def set_domain_privacy(self, cookie, privacy_enabled):
-        self._set_domain_whois_privacy(
-            cookie, {True: 'enable', False: 'disable'}[privacy_enabled])
+        enable_privacy = 'enable' if privacy_enabled else 'disable'
+        self._set_domain_whois_privacy(cookie, enable_privacy)
         return True
 
     def renew_domain(self, domain, current_expiration_year, period):
@@ -626,13 +629,21 @@ class OpenSRS(object):
             'send_registrant_verification_email'
         )['response_text']
 
+    @transform_auth_failure_into_not_found
     def _make_registrant_verification_call(self, domain_name, operation):
+        return self._req(
+            action=operation,
+            object='domain',
+            attributes={'domain': domain_name}
+        ).get_data()
+
+
+def transform_auth_failure_into_not_found(fn):
+    def _transform(self, *args, **kwargs):
         try:
-            return self._req(
-                action=operation, object='domain',
-                attributes={'domain': domain_name}
-            ).get_data()
+            return fn(self, *args, **kwargs)
         except errors.XCPError, e:
             if e.response_code == self.CODE_AUTHENTICATION_FAILED:
                 raise errors.DomainNotFound(e)
             raise
+    return update_wrapper(_transform, fn)
