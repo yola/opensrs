@@ -12,6 +12,17 @@ def format_date(date):
     return date.strftime('%Y-%m-%d')
 
 
+def transform_auth_failure_into_not_found(fn):
+    def _transform(self, *args, **kwargs):
+        try:
+            return fn(self, *args, **kwargs)
+        except errors.XCPError, e:
+            if e.response_code == self.CODE_AUTHENTICATION_FAILED:
+                raise errors.DomainNotFound(e)
+            raise
+    return update_wrapper(_transform, fn)
+
+
 class OpenSRS(object):
     CODE_DOMAIN_AVAILABLE = '210'
     CODE_DOMAIN_TAKEN = '211'
@@ -636,14 +647,3 @@ class OpenSRS(object):
             object='domain',
             attributes={'domain': domain_name}
         ).get_data()
-
-
-def transform_auth_failure_into_not_found(fn):
-    def _transform(self, *args, **kwargs):
-        try:
-            return fn(self, *args, **kwargs)
-        except errors.XCPError, e:
-            if e.response_code == self.CODE_AUTHENTICATION_FAILED:
-                raise errors.DomainNotFound(e)
-            raise
-    return update_wrapper(_transform, fn)
