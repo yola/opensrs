@@ -3,7 +3,7 @@ from unittest import TestCase
 from opensrs import opensrsapi, xcp, errors
 
 try:
-    from opensrs.test import settings
+    import test_settings
 except ImportError:
     print 'Please configure your settings file. (Consult the README)'
 
@@ -27,8 +27,8 @@ class XCPChannelPlaygroundTest(TestCase):
     It is currently not intended for running actual tests.
     """
 
-    USERNAME = settings.USERNAME
-    PRIVATE_KEY = settings.PRIVATE_KEY
+    USERNAME = test_settings.USERNAME
+    PRIVATE_KEY = test_settings.PRIVATE_KEY
 
     @disabletest
     def _disabled_test_make_request(self):

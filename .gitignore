@@ -36,4 +36,4 @@ nosetests.xml
 .pydevproject
 
 # test settings
-settings.py
+test_settings.py

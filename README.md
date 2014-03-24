@@ -38,7 +38,7 @@ Install requirements:
 
     pip install -r requirements.txt
 
-Create the `settings.py` file in the `opensrs/test` directory, with a `USERNAME` and `PRIVATE_KEY`
+Create the `test_settings.py` file in the root directory, with a `USERNAME` and `PRIVATE_KEY`
 
 ```python
 USERNAME = 'USERNAME'
