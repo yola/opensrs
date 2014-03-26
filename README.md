@@ -4,8 +4,8 @@
 
 Getting publishing info for a user's sites:
 ```python
->>> import opensrs
->>> client = opensrs.OpenSRS(host, port, username, private_key, default_timeout)
+>>> from opensrs import OpenSRS
+>>> client = OpenSRS(host, port, username, private_key, default_timeout)
 >>> client.suggest_domains('foo', ['.COM', '.ORG', '.NET', '.INFO'], 4))
 {
     'lookup': [
@@ -28,8 +28,8 @@ Getting publishing info for a user's sites:
 The service client is configured on initialization.
 
 ```python
-import opensrs
-client = opensrs.OpenSRS(host, port, username, private_key, default_timeout)
+from opensrs import OpenSRS
+client = OpenSRS(host, port, username, private_key, default_timeout)
 ```
 
 ## Testing
