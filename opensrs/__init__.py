@@ -1,5 +1,3 @@
-"""Client library for OpenSRS"""
-
 # This module just imports useful items from submodules to make
 # namespacing cleaner.
 
