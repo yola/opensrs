@@ -73,7 +73,3 @@ class DomainAlreadyRenewed(BadResponseError):
 
 class DomainLookupUnavailable(OperationFailure):
     pass
-
-
-class DomainNotFound(BadResponseError):
-    pass
