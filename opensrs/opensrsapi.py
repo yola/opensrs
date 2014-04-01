@@ -12,13 +12,13 @@ def format_date(date):
     return date.strftime('%Y-%m-%d')
 
 
-def transform_auth_failure_into_not_found(fn):
+def capture_auth_failure(fn):
     def _transform(self, *args, **kwargs):
         try:
             return fn(self, *args, **kwargs)
         except errors.XCPError, e:
             if e.response_code == self.CODE_AUTHENTICATION_FAILED:
-                raise errors.DomainNotFound(e)
+                raise errors.AuthenticationFailure(e)
             raise
     return update_wrapper(_transform, fn)
 
@@ -190,6 +190,7 @@ class OpenSRS(object):
         return self._req(action='PROCESS_PENDING', object='DOMAIN',
                          attributes=attributes)
 
+    @capture_auth_failure
     def _set_cookie(self, domain, reg_username, reg_password):
         attributes = {
             'domain': domain,
@@ -217,7 +218,6 @@ class OpenSRS(object):
         return self._req(action='GET', object='DOMAIN', cookie=cookie,
                          attributes={'type': type})
 
-    @transform_auth_failure_into_not_found
     def _set_domain_whois_privacy(self, cookie, privacy):
         attributes = {
             'data': 'whois_privacy_state',
@@ -327,12 +327,7 @@ class OpenSRS(object):
     # (hopefully) useful form.
 
     def get_auth_cookie(self, domain, username, password):
-        try:
-            rsp = self._set_cookie(domain, username, password)
-        except errors.XCPError, e:
-            if e.response_code == self.CODE_AUTHENTICATION_FAILED:
-                raise errors.AuthenticationFailure(e)
-            raise
+        rsp = self._set_cookie(domain, username, password)
         return rsp.get_data()['attributes']['cookie']
 
     def domain_available(self, domain):
@@ -640,7 +635,7 @@ class OpenSRS(object):
             'send_registrant_verification_email'
         )['response_text']
 
-    @transform_auth_failure_into_not_found
+    @capture_auth_failure
     def _make_registrant_verification_call(self, domain_name, operation):
         return self._req(
             action=operation,
