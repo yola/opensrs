@@ -2,7 +2,7 @@
 
 ## Usage
 
-Getting publishing info for a user's sites:
+Looking up statuses of domains
 ```python
 >>> from opensrs import OpenSRS
 >>> client = OpenSRS(host, port, username, private_key, default_timeout)
