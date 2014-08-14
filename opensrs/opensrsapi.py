@@ -46,7 +46,6 @@ class OpenSRS(object):
     CODE_CANNOT_PUSH_DOMAIN = '465'
 
     MSG_ALREADY_RENEWED_SANDBOX = 'Domain Already Renewed'
-    channel_factory = XCPChannel
 
     def __init__(self, host, port, username, private_key, default_timeout):
         self.host = host
@@ -56,8 +55,8 @@ class OpenSRS(object):
         self.default_timeout = default_timeout
 
     def _get_channel(self):
-        return self.channel_factory(self.host, self.port, self.username,
-                                    self.private_key, self.default_timeout)
+        return XCPChannel(self.host, self.port, self.username,
+            self.private_key, self.default_timeout)
 
     def _req(self, action, object, attributes, **kw):
         msg = XCPMessage(action, object, attributes, **kw)
@@ -386,7 +385,7 @@ class OpenSRS(object):
         return domains
 
     def register_domain(self, domain, purchase_period, user, user_id,
-                        password, nameservers=None, private_reg=None,
+                        password, nameservers=None, private_reg=False,
                         reg_domain=None, extras=None):
         extras = extras or {}
         attrs = self._make_domain_reg_attrs(domain, purchase_period, user,

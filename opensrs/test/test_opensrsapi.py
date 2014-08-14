@@ -117,17 +117,28 @@ class MockXCPChannelFactory(opensrsapi.XCPChannel):
         self.requests.append(req)
         self.responses.append(resp)
 
-    def __call__(self, host, port, username, private_key):
+    def __call__(self, host, port, username, private_key, timeout):
         self.private_key = private_key
         return self
 
-    def _make_call(self, message):
+    def make_request(self, message):
         self.test.assertEqual(self.requests.pop(0),
                               message.ops_message.get_data())
-        return xcp.OPSMessage(data=self.responses.pop(0))
+        message = xcp.OPSMessage(data=self.responses.pop(0))
+        if message.get_data()['is_success'] == '0':
+            raise errors.XCPError(message)
+        return message
 
 
 class OpenSRSTest(TestCase):
+
+    def setUp(self):
+        self.mcf = MockXCPChannelFactory(self)
+        self.real_channel = opensrsapi.XCPChannel
+        opensrsapi.XCPChannel = self.mcf
+
+    def tearDown(self):
+        opensrsapi.XCPChannel = self.real_channel
 
     # Helpers for building request and response data.
 
@@ -171,19 +182,21 @@ class OpenSRSTest(TestCase):
         })
 
     def _data_user_contact(self):
-        return {'org_name': 'Private',
-                'city': 'city',
-                'first_name': 'first_name',
-                'last_name': 'last_name',
-                'address1': 'address1',
-                'address2': 'address2',
-                'address3': 'address3',
-                'fax': '',
-                'phone': '5551234',
-                'state': 'state',
-                'postal_code': '',
-                'country': 'ZA',
-                'email': 'email@example.com'}
+        return {
+            'org_name': 'first_name last_name',
+            'city': 'city',
+            'first_name': 'first_name',
+            'last_name': 'last_name',
+            'address1': 'address1',
+            'address2': 'address2',
+            'address3': 'address3',
+            'fax': '',
+            'phone': '5551234',
+            'state': 'state',
+            'postal_code': '',
+            'country': 'ZA',
+            'email': 'email@example.com'
+        }
 
     def _objdata_user_contact(self):
         user_data = self._data_user_contact()
@@ -241,10 +254,8 @@ class OpenSRSTest(TestCase):
     # Utility methods.
 
     def safe_opensrs(self, req, resp):
-        mcf = MockXCPChannelFactory(self)
-        mcf.add_req(req, resp)
+        self.mcf.add_req(req, resp)
         osrs = opensrsapi.OpenSRS('host', 'port', 'user', 'key', 'timeout')
-        osrs.channel_factory = mcf
         return osrs
 
     # Tests.
@@ -367,7 +378,7 @@ class OpenSRSTest(TestCase):
             'is_success': '1'}
         opensrs = self.safe_opensrs(
             self._data_domain_reg('foo.com', '1', 'foo', 'bar'), response_data)
-        opensrs.channel_factory.add_req(
+        self.mcf.add_req(
             self._data_process_pending('1065034', False), process_response)
         expected = {
             'domain_name': 'foo.com',
@@ -408,7 +419,7 @@ class OpenSRSTest(TestCase):
         opensrs = self.safe_opensrs(
             self._data_domain_reg_nameservers('foo.com', '1', 'foo', 'bar'),
             response_data)
-        opensrs.channel_factory.add_req(
+        self.mcf.add_req(
             self._data_process_pending('1065034', False), process_response)
         expected = {
             'domain_name': 'foo.com',
