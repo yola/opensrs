@@ -290,10 +290,6 @@ class OpenSRS(object):
         return self._req(action='MODIFY', object='DOMAIN', cookie=cookie,
                          attributes=attributes)
 
-    def _get_transfers_away(self, page):
-        return self._req(action='GET_TRANSFERS_AWAY', object='DOMAIN',
-                         attributes={'status': 'completed', 'page': str(page)})
-
     def _revoke_domain(self, domain_name):
         attributes = {
             'domain': domain_name,
@@ -545,9 +541,16 @@ class OpenSRS(object):
         self._set_domain_contacts(cookie, user, domain)
         return True
 
-    def get_transfers_away(self, page):
-        rsp = self._get_transfers_away(page)
-        return rsp.get_data()['attributes'].get('transfers', [])
+    def get_transferred_away_domains(self, page, domain=None):
+        attributes = {'status': 'completed', 'page': str(page)}
+        if domain is not None:
+            attributes.update({
+                'domain': domain,
+                'page': '0'
+            })
+
+        response = self._req('GET_TRANSFERS_AWAY', 'DOMAIN', attributes)
+        return response.get_data()['attributes'].get('transfers', [])
 
     def revoke_domain(self, domain):
         return self._revoke_domain(domain).get_data()
