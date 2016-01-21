@@ -1,5 +1,7 @@
 from unittest import TestCase
 
+from mock import Mock
+
 from opensrs import opensrsapi, xcp, errors
 
 try:
@@ -430,3 +432,11 @@ class OpenSRSTest(TestCase):
         self.assertEquals(expected, opensrs.register_domain(
             'foo.com', 1, self._objdata_user_contact(), 'foo', 'bar',
             nameservers=nameservers))
+
+    def test_is_auto_renewed(self):
+        osrs = opensrsapi.OpenSRS('host', 'port', 'user', 'key', 'timeout')
+        error = Mock(response_code=osrs.CODE_RENEWAL_IS_NOT_ALLOWED)
+
+        self.assertTrue(osrs._is_auto_renewed(error, 'foo.co.za'))
+        self.assertTrue(osrs._is_auto_renewed(error, 'bar.de'))
+        self.assertFalse(osrs._is_auto_renewed(error, 'test.com'))

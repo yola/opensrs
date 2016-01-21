@@ -2,6 +2,7 @@ from functools import update_wrapper
 import logging
 
 from opensrs import errors
+from opensrs.constants import AUTO_RENEWED_TLDS
 from opensrs.xcp import XCPMessage, XCPChannel
 
 
@@ -443,11 +444,10 @@ class OpenSRS(object):
             rsp = self._renew_domain(domain, current_expiration_year, period)
             return rsp.get_data()['attributes']['order_id']
         except errors.XCPError, e:
-            # We cannot renew .de domains right now (they are
-            # auto-renewed automatically on registar side).
-            # Therefore consider each .de domain renewal
-            # attempt as successful
-            if self._already_renewed(e) or self._is_de_domain_case(e, domain):
+            # We cannot control domains which are automatically renewed on
+            # OpenSRS side. Thus we always treat them as already renewed
+            # for each renewal attempt.
+            if self._already_renewed(e) or self._is_auto_renewed(e, domain):
                 raise errors.DomainAlreadyRenewed(e)
             raise
 
@@ -456,9 +456,10 @@ class OpenSRS(object):
                 (e.response_code == self.CODE_ALREADY_RENEWED_SANDBOX and
                  e.response_text.startswith(self.MSG_ALREADY_RENEWED_SANDBOX)))
 
-    def _is_de_domain_case(self, e, domain):
-        return (e.response_code == self.CODE_RENEWAL_IS_NOT_ALLOWED and
-                domain.lower().endswith('.de'))
+    def _is_auto_renewed(self, err, domain_name):
+        tld = domain_name.rsplit('.', 1)[-1].lower()
+        return (err.response_code == self.CODE_RENEWAL_IS_NOT_ALLOWED and
+                tld in AUTO_RENEWED_TLDS)
 
     def get_domains_by_expiredate(self, start_date, end_date, page=None):
         domains = []

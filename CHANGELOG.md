@@ -1,5 +1,11 @@
 # [Changelog](https://github.com/yola/opensrs/releases)
 
+## 1.0.0
+* Decided it's stable enough for 1.0.0
+* Added more auto-renewed TLDs (.za and .dk) ([#6][6])
+
+[6]: https://github.com/yola/opensrs/pull/6
+
 ## 0.1.0
 * Renamed `get_transfers_away` to `get_transferred_away_domains`
 * Now `get_transferred_away_domains` accepts optional `domain` param
