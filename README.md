@@ -1,5 +1,7 @@
 # OpenSRS
 
+[![Build Status](https://travis-ci.org/yola/opensrs.svg?branch=master)](https://travis-ci.org/yola/opensrs)
+
 ## Usage
 
 Looking up statuses of domains
@@ -48,3 +50,7 @@ PRIVATE_KEY = 'PRIVATE_KEY'
 Run the tests with:
 
     nosetests
+
+Or you can easily run tests on Python 2.7 with tox:
+
+    tox
