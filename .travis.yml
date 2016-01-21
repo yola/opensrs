@@ -1,0 +1,16 @@
+language: python
+sudo: false
+cache:
+  directories:
+  - $HOME/.cache/pip
+matrix:
+  include:
+  - python: 2.7
+    env: TOXENV=py27
+install:
+- pip install tox
+script:
+- tox
+notifications:
+  slack:
+    secure: bGN/7RcHM9oHzKRW/NSDna95Syf0Kq/ZvaC4hf7k20Jc0U49uyvCIV58RQQgu/e21yNnthMGAXfbcHL9ovFTdKD3sdAmFg296DexGCV56MPxeLOcCF8AnLKBd5pXIb06VRfc82CPr6b4aqSPt1Xxj7sUSRD7GylvAxO8FaMAb0M=
