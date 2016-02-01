@@ -12,5 +12,8 @@ install:
 script:
 - tox
 notifications:
+  email: false
   slack:
     secure: CoJoz1x1qzGxF8wO3WNgQrGXd1ZSPZ8HEkWtsNCco/hHVzB4pVR2r5q04SIPCUcwdLtIsG/BQnhgzLjJ3PF16zbAYcIx99iuRRBchMc4Pj4jKX96MBk9QQk//EeW6xQgVmkgj8BtSw4WS0sdgboLcEA68DP0oeiR0BbgR2PGP0M=
+    on_success: change
+    on_failure: change
