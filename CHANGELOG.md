@@ -1,5 +1,10 @@
 # [Changelog](https://github.com/yola/opensrs/releases)
 
+## 1.0.1
+* Added more auto-renewed TLDs (.at and .fr) ([#9][9])
+
+[9]: https://github.com/yola/opensrs/pull/9
+
 ## 1.0.0
 * Decided it's stable enough for 1.0.0
 * Added more auto-renewed TLDs (.za and .dk) ([#6][6])
