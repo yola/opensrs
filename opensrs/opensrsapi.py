@@ -288,6 +288,12 @@ class OpenSRS(object):
                 'tech': contact,
             },
         }
+
+        if domain.lower().endswith('.ca'):
+            # CA domains fail to update if billing contact info is set, remove
+            # to handle these cases
+            del attributes['contact_set']['billing']
+
         return self._req(action='MODIFY', object='DOMAIN', cookie=cookie,
                          attributes=attributes)
 
