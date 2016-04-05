@@ -1,6 +1,6 @@
 from unittest import TestCase
 
-from mock import Mock
+from mock import Mock, patch
 
 from opensrs import opensrsapi, xcp, errors
 
@@ -99,7 +99,6 @@ class XCPChannelPlaygroundTest(TestCase):
                                   username=self.USERNAME,
                                   private_key=self.PRIVATE_KEY)
         rsp = oapi.sw_register_domain('foo.badtld', '1', user, 'foo', 'bar')
-        print rsp.get_data()
         self.assertEqual('1', rsp.get_data()['is_success'])
         raise Exception()
 
@@ -440,3 +439,42 @@ class OpenSRSTest(TestCase):
         self.assertTrue(osrs._is_auto_renewed(error, 'foo.co.za'))
         self.assertTrue(osrs._is_auto_renewed(error, 'bar.de'))
         self.assertFalse(osrs._is_auto_renewed(error, 'test.com'))
+
+
+class OpenSRSTestCase(TestCase):
+    def setUp(self):
+        XCPMessage_patcher = patch.object(
+            opensrsapi, 'XCPMessage', spec_set=opensrsapi.XCPMessage)
+        XCPChannel_patcher = patch.object(
+            opensrsapi, 'XCPChannel', spec_set=opensrsapi.XCPChannel)
+        self.m_xcp_channel = XCPChannel_patcher.start()
+        self.m_xcp_message = XCPMessage_patcher.start()
+        self.addCleanup(XCPChannel_patcher.stop)
+        self.addCleanup(XCPMessage_patcher.stop)
+        self.opensrs = opensrsapi.OpenSRS(
+            'host', 'port', 'user', 'key', 'timeout')
+
+    @property
+    def user(self):
+        return type('User', (object,), {
+            'org_name': 'first_name last_name',
+            'city': 'city',
+            'first_name': 'first_name',
+            'last_name': 'last_name',
+            'address1': 'address1',
+            'address2': 'address2',
+            'address3': 'address3',
+            'fax': '',
+            'phone': '5551234',
+            'state': 'state',
+            'postal_code': '',
+            'country_code': 'ZA',
+            'email': 'email@example.com'
+        })
+
+
+class OpenSRSSetContactTestCase(OpenSRSTestCase):
+    def test_does_not_send_billing_info_for_ca_domains(self):
+        self.opensrs.set_contacts('cookie', self.user, 'foo.ca')
+        null, null, attributes = self.m_xcp_message.call_args[0]
+        self.assertNotIn('billing', attributes['contact_set'])

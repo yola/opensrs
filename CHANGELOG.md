@@ -1,5 +1,8 @@
 # [Changelog](https://github.com/yola/opensrs/releases)
 
+## Dev
+* Add special handling in contact update for CA domains
+
 ## 1.0.1
 * Added more auto-renewed TLDs (.at and .fr) ([#9][9])
 
