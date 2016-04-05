@@ -1,6 +1,6 @@
 # [Changelog](https://github.com/yola/opensrs/releases)
 
-## Dev
+## 1.0.2
 * Add special handling in contact update for CA domains
 
 ## 1.0.1
