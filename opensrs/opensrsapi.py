@@ -651,3 +651,19 @@ class OpenSRS(object):
             object='domain',
             attributes={'domain': domain_name}
         ).get_data()
+
+    def enable_auto_renewal(self, domain):
+        self._toggle_auto_renewal(domain, True)
+
+    def disable_auto_renewal(self, domain):
+        self._toggle_auto_renewal(domain, False)
+
+    def _toggle_auto_renewal(self, domain, enabled):
+        attributes = {
+            'expire_action': {
+                'auto_renew': enabled
+            }
+        }
+
+        return self._req(
+            action='MODIFY', object='DOMAIN', attributes=attributes)
