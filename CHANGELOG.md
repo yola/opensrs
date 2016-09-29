@@ -2,7 +2,7 @@
 
 ## DEV
 
-* Add method to set domain's auto-renew status.
+* Add methods to enable/disable domain auto-renewal.
 
 ## 1.0.2
 * Add special handling in contact update for CA domains
