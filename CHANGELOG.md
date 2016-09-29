@@ -1,5 +1,9 @@
 # [Changelog](https://github.com/yola/opensrs/releases)
 
+## DEV
+
+* Add methods to enable/disable domain auto-renewal.
+
 ## 1.0.2
 * Add special handling in contact update for CA domains
 
