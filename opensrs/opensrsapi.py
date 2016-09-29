@@ -56,10 +56,8 @@ class OpenSRS(object):
         self.default_timeout = default_timeout
 
     def _get_channel(self):
-        return XCPChannel(
-            self.host, self.port, self.username, self.private_key,
-            self.default_timeout
-        )
+        return XCPChannel(self.host, self.port, self.username,
+            self.private_key, self.default_timeout)
 
     def _req(self, action, object, attributes, **kw):
         msg = XCPMessage(action, object, attributes, **kw)
@@ -654,11 +652,17 @@ class OpenSRS(object):
             attributes={'domain': domain_name}
         ).get_data()
 
-    def set_domain_auto_renew_status(self, cookie, domain, enabled):
+    def enable_auto_renew(self, cookie, domain):
+        self._set_auto_renew_status(cookie, domain, True)
+
+    def disable_auto_renewal(self, cookie, domain):
+        self._set_auto_renew_status(cookie, domain, False)
+
+    def _set_auto_renewal(self, cookie, domain, enabled):
         attributes = {
             'expire_action': {
                 'auto_renew': int(enabled),
-                'let_expire': int(enabled)
+                'let_expire': int(not enabled)
             }
         }
         return self._req(
