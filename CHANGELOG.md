@@ -1,6 +1,6 @@
 # [Changelog](https://github.com/yola/opensrs/releases)
 
-## DEV
+## 1.1.0
 
 * Add methods to enable/disable domain auto-renewal.
 
