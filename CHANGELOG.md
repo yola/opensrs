@@ -1,5 +1,8 @@
 # [Changelog](https://github.com/yola/opensrs/releases)
 
+## 1.1.1
+* Fix wrong types in API call (`enable/disable_domain_auto_renewal`).
+
 ## 1.1.0
 * Add methods to enable/disable domain auto-renewal.
 
