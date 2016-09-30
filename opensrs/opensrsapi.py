@@ -661,8 +661,8 @@ class OpenSRS(object):
     def _set_domain_auto_renewal_status(self, cookie, domain_name, enabled):
         attributes = {
             'data': 'expire_action',
-            'auto_renew': int(enabled),
-            'let_expire': int(not enabled)
+            'auto_renew': str(int(enabled)),
+            'let_expire': str(int(not enabled))
         }
 
         return self._req(
