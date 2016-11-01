@@ -16,5 +16,6 @@ setup(
     packages=find_packages(),
     install_requires=[
         'demands >= 4.0.0, < 5.0.0',
+        'python-dateutil < 3.0.0',
     ]
 )
