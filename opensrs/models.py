@@ -9,4 +9,4 @@ class Domain(object):
 
     @property
     def tld(self):
-        return self.name.rsplit('.', 1)[1]
+        return self.name.split('.')[-1]
