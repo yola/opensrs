@@ -1,7 +1,7 @@
 CONNECTION_OPTIONS = {
     'host': 'horizon.opensrs.net',
     'port': '55443',
-    'username': 'username',
-    'private_key': 'private_key',
+    'username': 'REPLACE WITH REAL USERNAME',
+    'private_key': 'REPLACE WITH REAL PRIVATE KEY',
     'default_timeout': 60,
 }
