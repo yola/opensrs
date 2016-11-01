@@ -5,7 +5,7 @@ class Domain(object):
     def __init__(self, data):
         self.name = data['name']
         self.auto_renew = data['f_auto_renew'] == 'Y'
-        self.expiry_date = parse(data['expiredate'])
+        self.expiry_date = parse(data['expiredate']).date()
 
     @property
     def tld(self):
