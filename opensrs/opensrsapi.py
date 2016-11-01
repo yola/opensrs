@@ -485,7 +485,7 @@ class OpenSRS(object):
             **pagination_options)
 
     def _get_domains_by_expiredate(self, expiry_from, expiry_to,
-                                   page=1, page_size=40):
+                                   page, page_size=40):
         attributes = {
             'exp_from': format_date(expiry_from),
             'exp_to': format_date(expiry_to),
