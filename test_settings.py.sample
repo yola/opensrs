@@ -1,5 +1,5 @@
 CONNECTION_OPTIONS = {
-    'hostname': 'horizon.opensrs.net',
+    'host': 'horizon.opensrs.net',
     'port': '55443',
     'username': 'username',
     'private_key': 'private_key',
