@@ -1,5 +1,11 @@
 # [Changelog](https://github.com/yola/opensrs/releases)
 
+## DEV
+* Add `OpenSRS.iterate_domains()`
+* Add `Domain` model
+* Start to depend on `demands` and `python-dateutil`
+* Move out tests from the package
+
 ## 1.1.1
 * Fix wrong types in API call (`enable/disable_domain_auto_renewal`).
 
