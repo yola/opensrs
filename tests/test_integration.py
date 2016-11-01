@@ -15,7 +15,7 @@ class IterateDomainsTestCase(TestCase):
         self.iterable_results = opensrs.iterate_domains(
             expiry_from, expiry_to)
 
-    def test_returns_iterable_results(self):
+    def test_returns_iterable_domain_data(self):
         for domain_data in self.iterable_results:
             domain = Domain(domain_data)
             self.assertIsInstance(domain.expiry_date, date)
