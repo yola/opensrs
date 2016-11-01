@@ -10,3 +10,10 @@ class Domain(object):
     @property
     def tld(self):
         return self.name.split('.')[-1]
+
+    def to_dict(self):
+        return {
+            'name': self.name,
+            'auto_renew': self.auto_renew,
+            'expiry_date': self.expiry_date
+        }

@@ -464,7 +464,7 @@ class OpenSRS(object):
         domains = []
         page = page or 1
         while True:
-            data = self._get_domains_by_expiredate(start_date, end_date, page)
+            data = self.list_domains(start_date, end_date, page)
             for domain in data['exp_domains']:
                 domains.append({
                     'domain': domain['name'],
@@ -480,11 +480,10 @@ class OpenSRS(object):
     def iterate_domains(self, expiry_from, expiry_to):
         pagination_options = {RESULTS_KEY: 'exp_domains'}
         return PaginatedResults(
-            self._get_domains_by_expiredate, args=(expiry_from, expiry_to),
+            self.list_domains, args=(expiry_from, expiry_to),
             **pagination_options)
 
-    def _get_domains_by_expiredate(self, expiry_from, expiry_to,
-                                   page, page_size=40):
+    def list_domains(self, expiry_from, expiry_to, page, page_size=40):
         attributes = {
             'exp_from': format_date(expiry_from),
             'exp_to': format_date(expiry_to),

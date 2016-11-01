@@ -25,3 +25,11 @@ class DomainTestCase(TestCase):
 
     def test_has_auto_renew_attribute(self):
         self.assertFalse(self.domain.auto_renew)
+
+    def test_has_to_dict_method(self):
+        expected_data = {
+            'name': 'foo.co.za',
+            'auto_renew': False,
+            'expiry_date': date(2016, 11, 2),
+        }
+        self.assertEqual(self.domain.to_dict(), expected_data)
