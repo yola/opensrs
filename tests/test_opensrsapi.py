@@ -3,11 +3,7 @@ from unittest import TestCase
 from mock import Mock, patch
 
 from opensrs import opensrsapi, xcp, errors
-
-try:
-    import test_settings
-except ImportError:
-    print 'Please configure your settings file. (Consult the README)'
+import test_settings
 
 
 def disabletest(func):
@@ -29,18 +25,20 @@ class XCPChannelPlaygroundTest(TestCase):
     It is currently not intended for running actual tests.
     """
 
-    USERNAME = test_settings.USERNAME
-    PRIVATE_KEY = test_settings.PRIVATE_KEY
+    _CONNECTION_PARAMS = {
+        'host': test_settings.HOSTNAME,
+        'port': test_settings.PORT,
+        'username': test_settings.USERNAME,
+        'private_key': test_settings.PRIVATE_KEY,
+        'default_timeout': 60
+    }
 
     @disabletest
     def _disabled_test_make_request(self):
         lookup_msg = opensrsapi.XCPMessage(
             action='LOOKUP', object='DOMAIN',
             attributes={'domain': 'example.com'})
-        channel = opensrsapi.XCPChannel(host='horizon.opensrs.net',
-                                        port='55443',
-                                        username=self.USERNAME,
-                                        private_key=self.PRIVATE_KEY)
+        channel = opensrsapi.XCPChannel(**self._CONNECTION_PARAMS)
         self.assertEqual(
             '1', channel.make_request(lookup_msg).get_data()['is_success'])
 
@@ -54,10 +52,7 @@ class XCPChannelPlaygroundTest(TestCase):
                                                         '.INFO'],
                                                'maximum': '4',
                                            })
-        channel = opensrsapi.XCPChannel(host='horizon.opensrs.net',
-                                        port='55443',
-                                        username=self.USERNAME,
-                                        private_key=self.PRIVATE_KEY)
+        channel = opensrsapi.XCPChannel(**self._CONNECTION_PARAMS)
         rsp = channel.make_request(lookup_msg)
         print rsp.get_data()
         self.assertEqual('1', rsp.get_data()['is_success'])
@@ -68,10 +63,9 @@ class XCPChannelPlaygroundTest(TestCase):
         lookup_msg = opensrsapi.XCPMessage(
             action='LOOKUP', object='DOMAIN',
             attributes={'domain': 'example.com'})
-        channel = opensrsapi.XCPChannel(host='horizon.opensrs.net',
-                                        port='55443',
-                                        username=self.USERNAME,
-                                        private_key='bad_key')
+        connection_params = self._CONNECTION_PARAMS.copy()
+        connection_params['private_key'] = 'bad_key'
+        channel = opensrsapi.XCPChannel(**connection_params)
         self.assertRaises(errors.XCPError, channel.make_request, lookup_msg)
 
     @disabletest
@@ -94,10 +88,7 @@ class XCPChannelPlaygroundTest(TestCase):
             'postal_code': None,
         }.items():
             setattr(user, k, v)
-        oapi = opensrsapi.OpenSRS(host='horizon.opensrs.net',
-                                  port='55443',
-                                  username=self.USERNAME,
-                                  private_key=self.PRIVATE_KEY)
+        oapi = opensrsapi.OpenSRS(**self._CONNECTION_PARAMS)
         rsp = oapi.sw_register_domain('foo.badtld', '1', user, 'foo', 'bar')
         self.assertEqual('1', rsp.get_data()['is_success'])
         raise Exception()

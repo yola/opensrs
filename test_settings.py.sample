@@ -1,2 +1,4 @@
+HOSTNAME = 'horizon.opensrs.net'
+PORT = '55443'
 USERNAME = 'USERNAME'
 PRIVATE_KEY = 'PRIVATE_KEY'
