@@ -1,6 +1,6 @@
 # [Changelog](https://github.com/yola/opensrs/releases)
 
-## DEV
+## 2.1.0
 * Add `OpenSRS.list_domains()`
 * Add `Domain.to_dict()`
 
