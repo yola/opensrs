@@ -1,4 +1,7 @@
-HOSTNAME = 'horizon.opensrs.net'
-PORT = '55443'
-USERNAME = 'USERNAME'
-PRIVATE_KEY = 'PRIVATE_KEY'
+CONNECTION_OPTIONS = {
+    'hostname': 'horizon.opensrs.net',
+    'port': '55443',
+    'username': 'username',
+    'private_key': 'private_key',
+    'default_timeout': 60,
+}
