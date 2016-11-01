@@ -1,6 +1,8 @@
 from functools import update_wrapper
 import logging
 
+from demands.pagination import PaginatedResults, RESULTS_KEY
+
 from opensrs import errors
 from opensrs.constants import AUTO_RENEWED_TLDS
 from opensrs.xcp import XCPMessage, XCPChannel
@@ -242,15 +244,6 @@ class OpenSRS(object):
         return self._req(action='RENEW', object='DOMAIN',
                          attributes=attributes)
 
-    def _get_domains_by_expiredate(self, exp_from, exp_to, page):
-        attributes = {
-            'exp_from': format_date(exp_from),
-            'exp_to': format_date(exp_to),
-            'page': str(page),
-        }
-        return self._req(action='GET_DOMAINS_BY_EXPIREDATE', object='DOMAIN',
-                         attributes=attributes, timeout=300)
-
     def _get_domains_contacts(self, domains):
         return self._req(action='GET_DOMAINS_CONTACTS', object='DOMAIN',
                          attributes={'domain_list': domains})
@@ -473,18 +466,36 @@ class OpenSRS(object):
         if qpage is None:
             qpage = 1
         while qpage is not None:
-            rsp = self._get_domains_by_expiredate(start_date, end_date, qpage)
-            data = rsp.get_data()
-            for domain in data['attributes']['exp_domains']:
+            data = self._get_domains_by_expiredate(start_date, end_date, qpage)
+            for domain in data['exp_domains']:
                 domains.append({
                     'domain': domain['name'],
                     'domain_expiration': domain['expiredate'],
                 })
-            if data['attributes']['remainder'] == '0':
+            if data['remainder'] == '0':
                 qpage = None
             else:
                 qpage += 1
         return domains
+
+    def iterate_domains(self, expiry_from, expiry_to):
+        pagination_options = {RESULTS_KEY: 'exp_domains'}
+        return PaginatedResults(
+            self._get_domains_by_expiredate, args=(expiry_from, expiry_to),
+            **pagination_options)
+
+    def _get_domains_by_expiredate(self, expiry_from, expiry_to,
+                                   page=1, page_size=40):
+        attributes = {
+            'exp_from': format_date(expiry_from),
+            'exp_to': format_date(expiry_to),
+            'page': str(page),
+            'limit': str(page_size)
+        }
+        return self._req(
+            action='GET_DOMAINS_BY_EXPIREDATE', object='DOMAIN',
+            attributes=attributes, timeout=300
+        ).get_data()['attributes']
 
     def get_domains_contacts(self, domains, limit=100):
         domain_data = {}
