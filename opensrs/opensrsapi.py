@@ -462,20 +462,19 @@ class OpenSRS(object):
 
     def get_domains_by_expiredate(self, start_date, end_date, page=None):
         domains = []
-        qpage = page
-        if qpage is None:
-            qpage = 1
-        while qpage is not None:
-            data = self._get_domains_by_expiredate(start_date, end_date, qpage)
+        page = page or 1
+        while True:
+            data = self._get_domains_by_expiredate(start_date, end_date, page)
             for domain in data['exp_domains']:
                 domains.append({
                     'domain': domain['name'],
                     'domain_expiration': domain['expiredate'],
                 })
+
             if data['remainder'] == '0':
-                qpage = None
-            else:
-                qpage += 1
+                break
+
+            page += 1
         return domains
 
     def iterate_domains(self, expiry_from, expiry_to):
