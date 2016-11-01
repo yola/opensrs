@@ -40,12 +40,8 @@ Install requirements:
 
     pip install -r requirements.txt
 
-Create the `test_settings.py` file in the root directory, with a `USERNAME` and `PRIVATE_KEY`
-
-```python
-USERNAME = 'USERNAME'
-PRIVATE_KEY = 'PRIVATE_KEY'
-```
+Create the `test_settings.py` file in the root directory with properly
+populated `CONNECTION_OPTIONS`. Use `test_settings.py.example` as an example.
 
 Run the tests with:
 
