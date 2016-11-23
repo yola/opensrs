@@ -1,10 +1,9 @@
 import hashlib
 import logging
 try:
-    from urllib.request import urlopen,Request
+    from urllib.request import urlopen, Request
 except ImportError:
-    from urllib2 import urlopen,Request
-import urllib
+    from urllib2 import urlopen, Request
 from xml.etree import ElementTree as ET
 
 from .errors import XCPError
@@ -120,11 +119,11 @@ class XCPMessage(object):
         self.timeout = timeout
 
     def get_content(self):
-        return self.ops_message.to_string()
+        return self.ops_message.to_string().encode('utf-8')
 
     def sign(self, private_key):
-        firstpass = hashlib.md5((self.get_content() + private_key).encode('utf-8')).hexdigest()
-        return hashlib.md5((firstpass + private_key).encode('utf-8')).hexdigest()
+        firstpass = hashlib.md5((self.get_content() + private_key)).hexdigest()
+        return hashlib.md5(firstpass.encode('utf-8') + private_key).hexdigest()
 
 
 class XCPChannel(object):
@@ -132,7 +131,7 @@ class XCPChannel(object):
         self.host = host
         self.port = port
         self.username = username
-        self.private_key = private_key
+        self.private_key = private_key.encode('utf-8')
         self.default_timeout = default_timeout
 
     def _make_call(self, message):
@@ -145,10 +144,9 @@ class XCPChannel(object):
             'X-Signature': message.sign(self.private_key),
         }
         [request.add_header(k, v) for k, v in headers.items()]
-        print('https://%s:%s/' % (self.host, self.port))
         timeout = message.timeout or self.default_timeout
         log.debug('Making XCP call with timeout = %s', timeout)
-        xml = urlopen(request, data=message.get_content().encode('utf-8'), timeout=timeout).read()
+        xml = urlopen(request, message.get_content()).read()
         return OPSMessage(xml=xml)
 
     def make_request(self, message):
