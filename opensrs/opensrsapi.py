@@ -19,7 +19,7 @@ def capture_auth_failure(fn):
     def _transform(self, *args, **kwargs):
         try:
             return fn(self, *args, **kwargs)
-        except errors.XCPError, e:
+        except errors.XCPError as e:
             if e.response_code == self.CODE_AUTHENTICATION_FAILED:
                 raise errors.AuthenticationFailure(e)
             raise
@@ -328,7 +328,7 @@ class OpenSRS(object):
     def domain_available(self, domain):
         try:
             rsp = self._lookup_domain(domain)
-        except errors.XCPError, e:
+        except errors.XCPError as e:
             if e.response_code == self.CODE_DOMAIN_INVALID:
                 raise errors.InvalidDomain(e)
             raise
@@ -343,7 +343,7 @@ class OpenSRS(object):
     def domain_transferable(self, domain):
         try:
             rsp = self._check_transfer(domain)
-        except errors.XCPError, e:
+        except errors.XCPError as e:
             if e.response_code == self.CODE_DOMAIN_INVALID:
                 raise errors.InvalidDomain(e)
             raise
@@ -396,7 +396,7 @@ class OpenSRS(object):
                 'domain_name': domain,
                 'registrar_data': {'ref_number': order_id}
             }
-        except errors.XCPError, e:
+        except errors.XCPError as e:
             if e.response_code == self.CODE_DOMAIN_REGISTRATION_TAKEN:
                 raise errors.DomainTaken(e)
             if e.response_code == self.CODE_DOMAIN_REGISTRATION_FAILED:
@@ -411,7 +411,7 @@ class OpenSRS(object):
         try:
             rsp = self._process_pending(order_id, cancel=cancel)
             return rsp.get_data().get('attributes')
-        except errors.XCPError, e:
+        except errors.XCPError as e:
             if self._already_renewed(e):
                 raise errors.DomainAlreadyRenewed(e)
             raise
@@ -442,7 +442,7 @@ class OpenSRS(object):
         try:
             rsp = self._renew_domain(domain, current_expiration_year, period)
             return rsp.get_data()['attributes']['order_id']
-        except errors.XCPError, e:
+        except errors.XCPError as e:
             # We cannot control domains which are automatically renewed on
             # OpenSRS side. Thus we always treat them as already renewed
             # for each renewal attempt.
@@ -524,7 +524,7 @@ class OpenSRS(object):
                 'domain_name': domain,
                 'registrar_data': {'ref_number': order_id},
             }
-        except errors.XCPError, e:
+        except errors.XCPError as e:
             if e.response_code == self.CODE_DOMAIN_NOT_TRANSFERABLE:
                 raise errors.DomainNotTransferable(e)
             if e.response_code == self.CODE_DOMAIN_REGISTRATION_FAILED:
@@ -611,7 +611,7 @@ class OpenSRS(object):
             log.info('opensrsapi.rsp_domain_transfer domain_name=%s, resp=%s',
                      domain, resp)
             return resp
-        except errors.XCPError, e:
+        except errors.XCPError as e:
             log.error(
                 'opensrsapi.rsp_domain_transfer fail domain_name=%s error=%s',
                 domain, e.response_text)
@@ -630,7 +630,7 @@ class OpenSRS(object):
             if int(data.get('is_success')) == 1:
                 redeem_resp['redeem_success'] = True
                 return redeem_resp
-        except errors.XCPError, e:
+        except errors.XCPError as e:
             if e.response_code == self.CODE_CANNOT_REDEEM_DOMAIN:
                 log.info(('opensrsapi.redeem_domain fail domain_name=%s '
                           'error=%s code=%s'), domain, e.response_text,

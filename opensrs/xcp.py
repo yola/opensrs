@@ -1,10 +1,13 @@
 import hashlib
 import logging
-import urllib2
+try:
+    from urllib.request import urlopen,Request
+except ImportError:
+    from urllib2 import urlopen,Request
+import urllib
 from xml.etree import ElementTree as ET
 
-from errors import XCPError
-
+from .errors import XCPError
 
 log = logging.getLogger(__name__)
 
@@ -76,7 +79,7 @@ class OPSMessage(object):
     def to_string(self):
         xmlheader = '<?xml version="1.0" encoding="UTF-8" standalone="no" ?>\n'
         xmlheader += '<!DOCTYPE OPS_envelope SYSTEM "ops.dtd">\n'
-        return xmlheader + ET.tostring(self.message_root)
+        return xmlheader + ET.tostring(self.message_root).decode('utf-8')
 
     def get_data(self, base_node=None):
         if base_node is None:
@@ -120,8 +123,8 @@ class XCPMessage(object):
         return self.ops_message.to_string()
 
     def sign(self, private_key):
-        firstpass = hashlib.md5(self.get_content() + private_key).hexdigest()
-        return hashlib.md5(firstpass + private_key).hexdigest()
+        firstpass = hashlib.md5((self.get_content() + private_key).encode('utf-8')).hexdigest()
+        return hashlib.md5((firstpass + private_key).encode('utf-8')).hexdigest()
 
 
 class XCPChannel(object):
@@ -133,18 +136,19 @@ class XCPChannel(object):
         self.default_timeout = default_timeout
 
     def _make_call(self, message):
+
         """All network interaction is isolated here for stubbing out."""
-        request = urllib2.Request('https://%s:%s/' % (self.host, self.port))
+        request = Request('https://%s:%s/' % (self.host, self.port))
         headers = {
             'Content-Type': 'text/xml',
             'X-Username': self.username,
             'X-Signature': message.sign(self.private_key),
         }
         [request.add_header(k, v) for k, v in headers.items()]
-
+        print('https://%s:%s/' % (self.host, self.port))
         timeout = message.timeout or self.default_timeout
         log.debug('Making XCP call with timeout = %s', timeout)
-        xml = urllib2.urlopen(request, message.get_content(), timeout).read()
+        xml = urlopen(request, data=message.get_content().encode('utf-8'), timeout=timeout).read()
         return OPSMessage(xml=xml)
 
     def make_request(self, message):
