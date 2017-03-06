@@ -4,7 +4,7 @@ import logging
 from demands.pagination import PaginatedResults, RESULTS_KEY
 
 from opensrs import errors
-from opensrs.constants import AUTO_RENEWED_TLDS
+from opensrs.constants import AUTO_RENEWED_TLDS, OrderProcessingMethod
 from opensrs.xcp import XCPMessage, XCPChannel
 
 
@@ -118,7 +118,7 @@ class OpenSRS(object):
             'reg_password': password,
             'reg_type': 'new',
             'f_lock_domain': '1',
-            'handle': 'save',
+            'handle': OrderProcessingMethod.SAVE,
         }
         if reg_domain is not None:
             attributes['reg_domain'] = reg_domain
