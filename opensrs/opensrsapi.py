@@ -4,7 +4,7 @@ import logging
 from demands.pagination import PaginatedResults, RESULTS_KEY
 
 from opensrs import errors
-from opensrs.constants import AUTO_RENEWED_TLDS, OrderProcessingMethod
+from opensrs.constants import AUTO_RENEWED_TLDS, OrderProcessingMethods
 from opensrs.xcp import XCPMessage, XCPChannel
 
 
@@ -104,7 +104,7 @@ class OpenSRS(object):
                                reg_domain, **kw):
         contact = self.make_contact(user, domain, **kw)
         order_processing_method = kw.get(
-            'order_processing_method', OrderProcessingMethod.SAVE)
+            'order_processing_method', OrderProcessingMethods.SAVE)
         # .eu domains require GB instead of UK as the country code
         if domain.lower().endswith('.eu') and contact['country'] == 'UK':
             contact['country'] = 'GB'
@@ -387,7 +387,7 @@ class OpenSRS(object):
     def register_domain(self, domain, purchase_period, user, user_id,
                         password, nameservers=None, private_reg=False,
                         reg_domain=None, extras=None,
-                        order_processing_method=OrderProcessingMethod.SAVE):
+                        order_processing_method=OrderProcessingMethods.SAVE):
         extras = extras or {}
         attrs = self._make_domain_reg_attrs(
             domain, purchase_period, user, user_id, password, nameservers,

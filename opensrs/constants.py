@@ -1,7 +1,7 @@
 AUTO_RENEWED_TLDS = ('de', 'dk', 'za', 'at', 'fr')
 
 
-class OrderProcessingMethod(object):
+class OrderProcessingMethods(object):
     """Indicates how to process the order.
 
     process: Proceed with the order immediately.

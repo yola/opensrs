@@ -3,7 +3,7 @@ from unittest import TestCase
 from mock import Mock, patch
 
 from opensrs import opensrsapi, xcp, errors
-from opensrs.constants import OrderProcessingMethod
+from opensrs.constants import OrderProcessingMethods
 from test_settings import CONNECTION_OPTIONS
 
 
@@ -206,7 +206,7 @@ class OpenSRSTest(TestCase):
             'f_lock_domain': '1',
             'f_whois_privacy': '0',
             'reg_type': 'new',
-            'handle': OrderProcessingMethod.SAVE})
+            'handle': OrderProcessingMethods.SAVE})
 
     def _data_process_pending(self, order_id, cancel):
         attributes = {'order_id': order_id}
@@ -231,7 +231,7 @@ class OpenSRSTest(TestCase):
             'f_lock_domain': '1',
             'f_whois_privacy': '0',
             'reg_type': 'new',
-            'handle': OrderProcessingMethod.SAVE,
+            'handle': OrderProcessingMethods.SAVE,
             'nameserver_list': [
                 {'name': 'ns1.example.com', 'sortorder': '1'},
                 {'name': 'ns2.example.com', 'sortorder': '2'}]})
