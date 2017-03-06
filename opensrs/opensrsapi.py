@@ -48,6 +48,8 @@ class OpenSRS(object):
     CODE_CANNOT_REDEEM_DOMAIN = '400'
     CODE_CANNOT_PUSH_DOMAIN = '465'
 
+    CODE_CLIENT_TIMED_OUT = '705'
+
     MSG_ALREADY_RENEWED_SANDBOX = 'Domain Already Renewed'
 
     def __init__(self, host, port, username, private_key, default_timeout):
@@ -405,6 +407,8 @@ class OpenSRS(object):
                             'Invalid syntax on domain')):
                     raise errors.InvalidDomain(e)
                 raise errors.DomainRegistrationFailure(e)
+            if e.response_code == self.CODE_CLIENT_TIMED_OUT:
+                raise errors.DomainRegistrationTimedOut(e)
             raise
 
     def process_pending(self, order_id, cancel=False):

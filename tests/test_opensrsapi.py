@@ -335,6 +335,25 @@ class OpenSRSTest(TestCase):
         except errors.DomainTaken:
             pass
 
+    def test_register_fail_timed_out(self):
+        response_data = {
+            'response_text': 'Timed out, resubmit request.',
+            'protocol': 'XCP',
+            'response_code': '705',
+            'object': 'DOMAIN',
+            'action': 'REPLY',
+            'attributes': {},
+            'is_success': '0'
+        }
+        opensrs = self.safe_opensrs(
+            self._data_domain_reg('foo.com', '1', 'foo', 'bar'), response_data)
+        try:
+            opensrs.register_domain(
+                'foo.com', 1, self._objdata_user_contact(), 'foo', 'bar')
+            self.fail('Expected DomainRegistrationTimedOut exception.')
+        except errors.DomainRegistrationTimedOut:
+            pass
+
     def test_register_succeed(self):
         response_data = {
             'response_text': 'Registration successful',
