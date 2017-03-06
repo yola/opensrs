@@ -1,5 +1,8 @@
 # [Changelog](https://github.com/yola/opensrs/releases)
 
+## Dev
+* Add `order_processing_method` method to `register_domain` method
+
 ## 2.1.0
 * Add `OpenSRS.list_domains()`
 * Add `Domain.to_dict()`
