@@ -122,7 +122,7 @@ class OpenSRS(object):
             'reg_password': password,
             'reg_type': 'new',
             'f_lock_domain': '1',
-            'handle': OrderProcessingMethod.SAVE,
+            'handle': order_processing_method,
         }
         if reg_domain is not None:
             attributes['reg_domain'] = reg_domain
