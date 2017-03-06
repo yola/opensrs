@@ -103,6 +103,8 @@ class OpenSRS(object):
     def _make_common_reg_attrs(self, domain, user, username, password,
                                reg_domain, **kw):
         contact = self.make_contact(user, domain, **kw)
+        order_processing_method = kw.get(
+            'order_processing_method', OrderProcessingMethod.SAVE)
         # .eu domains require GB instead of UK as the country code
         if domain.lower().endswith('.eu') and contact['country'] == 'UK':
             contact['country'] = 'GB'
@@ -384,11 +386,13 @@ class OpenSRS(object):
 
     def register_domain(self, domain, purchase_period, user, user_id,
                         password, nameservers=None, private_reg=False,
-                        reg_domain=None, extras=None):
+                        reg_domain=None, extras=None,
+                        order_processing_method=OrderProcessingMethod.SAVE):
         extras = extras or {}
-        attrs = self._make_domain_reg_attrs(domain, purchase_period, user,
-                                            user_id, password, nameservers,
-                                            private_reg, reg_domain, **extras)
+        attrs = self._make_domain_reg_attrs(
+            domain, purchase_period, user, user_id, password, nameservers,
+            private_reg, reg_domain,
+            order_processing_method=order_processing_method, **extras)
         if extras:
             attrs.update(extras)
         try:
