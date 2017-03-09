@@ -1,6 +1,6 @@
 # [Changelog](https://github.com/yola/opensrs/releases)
 
-## Dev
+## 2.2.0
 * Add `order_processing_method` method to `register_domain` method
 
 ## 2.1.0
