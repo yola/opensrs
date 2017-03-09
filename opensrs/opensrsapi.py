@@ -4,7 +4,7 @@ import logging
 from demands.pagination import PaginatedResults, RESULTS_KEY
 
 from opensrs import errors
-from opensrs.constants import AUTO_RENEWED_TLDS
+from opensrs.constants import AUTO_RENEWED_TLDS, OrderProcessingMethods
 from opensrs.xcp import XCPMessage, XCPChannel
 
 
@@ -47,6 +47,8 @@ class OpenSRS(object):
     CODE_RENEWAL_IS_NOT_ALLOWED = '480'
     CODE_CANNOT_REDEEM_DOMAIN = '400'
     CODE_CANNOT_PUSH_DOMAIN = '465'
+
+    CODE_CLIENT_TIMED_OUT = '705'
 
     MSG_ALREADY_RENEWED_SANDBOX = 'Domain Already Renewed'
 
@@ -101,6 +103,8 @@ class OpenSRS(object):
     def _make_common_reg_attrs(self, domain, user, username, password,
                                reg_domain, **kw):
         contact = self.make_contact(user, domain, **kw)
+        order_processing_method = kw.get(
+            'order_processing_method', OrderProcessingMethods.SAVE)
         # .eu domains require GB instead of UK as the country code
         if domain.lower().endswith('.eu') and contact['country'] == 'UK':
             contact['country'] = 'GB'
@@ -118,7 +122,7 @@ class OpenSRS(object):
             'reg_password': password,
             'reg_type': 'new',
             'f_lock_domain': '1',
-            'handle': 'save',
+            'handle': order_processing_method,
         }
         if reg_domain is not None:
             attributes['reg_domain'] = reg_domain
@@ -382,11 +386,13 @@ class OpenSRS(object):
 
     def register_domain(self, domain, purchase_period, user, user_id,
                         password, nameservers=None, private_reg=False,
-                        reg_domain=None, extras=None):
+                        reg_domain=None, extras=None,
+                        order_processing_method=OrderProcessingMethods.SAVE):
         extras = extras or {}
-        attrs = self._make_domain_reg_attrs(domain, purchase_period, user,
-                                            user_id, password, nameservers,
-                                            private_reg, reg_domain, **extras)
+        attrs = self._make_domain_reg_attrs(
+            domain, purchase_period, user, user_id, password, nameservers,
+            private_reg, reg_domain,
+            order_processing_method=order_processing_method, **extras)
         if extras:
             attrs.update(extras)
         try:
@@ -405,6 +411,8 @@ class OpenSRS(object):
                             'Invalid syntax on domain')):
                     raise errors.InvalidDomain(e)
                 raise errors.DomainRegistrationFailure(e)
+            if e.response_code == self.CODE_CLIENT_TIMED_OUT:
+                raise errors.DomainRegistrationTimedOut(e)
             raise
 
     def process_pending(self, order_id, cancel=False):

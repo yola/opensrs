@@ -3,6 +3,7 @@ from unittest import TestCase
 from mock import Mock, patch
 
 from opensrs import opensrsapi, xcp, errors
+from opensrs.constants import OrderProcessingMethods
 from test_settings import CONNECTION_OPTIONS
 
 
@@ -205,7 +206,7 @@ class OpenSRSTest(TestCase):
             'f_lock_domain': '1',
             'f_whois_privacy': '0',
             'reg_type': 'new',
-            'handle': 'save'})
+            'handle': OrderProcessingMethods.SAVE})
 
     def _data_process_pending(self, order_id, cancel):
         attributes = {'order_id': order_id}
@@ -230,7 +231,7 @@ class OpenSRSTest(TestCase):
             'f_lock_domain': '1',
             'f_whois_privacy': '0',
             'reg_type': 'new',
-            'handle': 'save',
+            'handle': OrderProcessingMethods.SAVE,
             'nameserver_list': [
                 {'name': 'ns1.example.com', 'sortorder': '1'},
                 {'name': 'ns2.example.com', 'sortorder': '2'}]})
@@ -332,6 +333,25 @@ class OpenSRSTest(TestCase):
                                     'foo', 'bar')
             self.fail('Expected DomainTaken exception.')
         except errors.DomainTaken:
+            pass
+
+    def test_register_fail_timed_out(self):
+        response_data = {
+            'response_text': 'Timed out, resubmit request.',
+            'protocol': 'XCP',
+            'response_code': '705',
+            'object': 'DOMAIN',
+            'action': 'REPLY',
+            'attributes': {},
+            'is_success': '0'
+        }
+        opensrs = self.safe_opensrs(
+            self._data_domain_reg('foo.com', '1', 'foo', 'bar'), response_data)
+        try:
+            opensrs.register_domain(
+                'foo.com', 1, self._objdata_user_contact(), 'foo', 'bar')
+            self.fail('Expected DomainRegistrationTimedOut exception.')
+        except errors.DomainRegistrationTimedOut:
             pass
 
     def test_register_succeed(self):
