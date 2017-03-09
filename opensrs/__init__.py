@@ -2,7 +2,7 @@
 # namespacing cleaner.
 
 __doc__ = 'Client library for OpenSRS'
-__version__ = '2.1.0'
+__version__ = '2.2.0'
 __url__ = 'https://github.com/yola/opensrs'
 
 from opensrs.opensrsapi import OpenSRS
