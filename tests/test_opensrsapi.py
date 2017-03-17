@@ -397,6 +397,30 @@ class OpenSRSTest(TestCase):
             'foo.com', 1, self._objdata_user_contact(), 'foo', 'bar',
             nameservers=nameservers))
 
+    def test_create_pending_domain_registration_succeeds(self):
+        response_data = {
+            'response_text': 'Registration successful',
+            'protocol': 'XCP',
+            'response_code': '200',
+            'object': 'DOMAIN',
+            'action': 'REPLY',
+            'attributes': {
+                'admin_email': 'email@example.com',
+                'id': '1065034'
+            },
+            'is_success': '1'}
+        opensrs = self.safe_opensrs(
+            self._data_domain_reg('foo.com', '1', 'foo', 'bar'),
+            response_data)
+        expected = {
+            'domain_name': 'foo.com',
+            'registrar_data': {
+                'ref_number': '1065034'
+            }
+        }
+        self.assertEquals(expected, opensrs.create_pending_domain_registration(
+            'foo.com', 1, self._objdata_user_contact(), 'foo', 'bar'))
+
     def test_is_auto_renewed(self):
         osrs = opensrsapi.OpenSRS('host', 'port', 'user', 'key', 'timeout')
         error = Mock(response_code=osrs.CODE_RENEWAL_IS_NOT_ALLOWED)

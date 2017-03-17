@@ -1,10 +1,11 @@
 # [Changelog](https://github.com/yola/opensrs/releases)
 
 ## Dev
+* Add `create_pending_domain_registration` method
 * Update `register_domain` to immediately process the order
 
 ## 2.2.0
-* Add `order_processing_method` method to `register_domain` method
+* Add `order_processing_method` parameter to `register_domain` method
 
 ## 2.1.0
 * Add `OpenSRS.list_domains()`

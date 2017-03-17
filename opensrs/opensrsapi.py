@@ -417,6 +417,15 @@ class OpenSRS(object):
             domains['search_key'] = data['search_key']
         return domains
 
+    def create_pending_domain_registration(
+            self, domain, purchase_period, user, user_id,
+            password, nameservers=None, private_reg=False,
+            reg_domain=None, extras=None):
+        return self._register_domain(
+            domain, purchase_period, user, user_id, password,
+            nameservers=nameservers, private_reg=private_reg,
+            reg_domain=reg_domain, extras=extras)
+
     def register_domain(self, domain, purchase_period, user, user_id,
                         password, nameservers=None, private_reg=False,
                         reg_domain=None, extras=None):
