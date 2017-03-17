@@ -309,7 +309,9 @@ class OpenSRSTest(TestCase):
             'is_success': '0',
             'transaction_id': '2009-06-29 08:47:20 27585 101'}
         opensrs = self.safe_opensrs(
-            self._data_domain_reg('foo.com', '1', 'foo', 'bar'), response_data)
+            self._data_domain_reg('foo.com', '1', 'foo', 'bar',
+                                  handle=OrderProcessingMethods.PROCESS),
+            response_data)
         try:
             opensrs.register_domain('foo.com', 1, self._objdata_user_contact(),
                                     'foo', 'bar')
@@ -328,7 +330,9 @@ class OpenSRSTest(TestCase):
             'is_success': '0'
         }
         opensrs = self.safe_opensrs(
-            self._data_domain_reg('foo.com', '1', 'foo', 'bar'), response_data)
+            self._data_domain_reg('foo.com', '1', 'foo', 'bar',
+                                  handle=OrderProcessingMethods.PROCESS),
+            response_data)
         try:
             opensrs.register_domain(
                 'foo.com', 1, self._objdata_user_contact(), 'foo', 'bar')
@@ -348,24 +352,10 @@ class OpenSRSTest(TestCase):
                 'id': '1065034'
             },
             'is_success': '1'}
-        process_response = {
-            'response_text': ('Domain registration successfully completed\n'
-                              'Domain successfully locked.'),
-            'protocol': 'XCP',
-            'response_code': '200',
-            'object': 'DOMAIN',
-            'action': 'REPLY',
-            'attributes': {
-                'order_id': '1065034',
-                'lock_state': '1',
-                'id': '616784',
-                'f_auto_renew': 'N',
-                'registration expiration date': '2010-09-17 13:26:27'},
-            'is_success': '1'}
         opensrs = self.safe_opensrs(
-            self._data_domain_reg('foo.com', '1', 'foo', 'bar'), response_data)
-        self.mcf.add_req(
-            self._data_process_pending('1065034', False), process_response)
+            self._data_domain_reg('foo.com', '1', 'foo', 'bar',
+                                  handle=OrderProcessingMethods.PROCESS),
+            response_data)
         expected = {
             'domain_name': 'foo.com',
             'registrar_data': {
@@ -387,31 +377,16 @@ class OpenSRSTest(TestCase):
                 'id': '1065034'
             },
             'is_success': '1'}
-        process_response = {
-            'response_text': ('Domain registration successfully completed\n'
-                              'Domain successfully locked.'),
-            'protocol': 'XCP',
-            'response_code': '200',
-            'object': 'DOMAIN',
-            'action': 'REPLY',
-            'attributes': {
-                'order_id': '1065034',
-                'lock_state': '1',
-                'id': '616784',
-                'f_auto_renew': 'N',
-                'registration expiration date': '2010-09-17 13:26:27'},
-            'is_success': '1'}
         nameservers = ['ns1.example.com', 'ns2.example.com']
         opensrs = self.safe_opensrs(
             self._data_domain_reg(
                 'foo.com', '1', 'foo', 'bar', custom_nameservers='1',
+                handle=OrderProcessingMethods.PROCESS,
                 nameserver_list=[
                     {'name': 'ns1.example.com', 'sortorder': '1'},
                     {'name': 'ns2.example.com', 'sortorder': '2'}]
             ),
             response_data)
-        self.mcf.add_req(
-            self._data_process_pending('1065034', False), process_response)
         expected = {
             'domain_name': 'foo.com',
             'registrar_data': {

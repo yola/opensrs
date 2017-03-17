@@ -1,5 +1,8 @@
 # [Changelog](https://github.com/yola/opensrs/releases)
 
+## Dev
+* Update `register_domain` to immediately process the order
+
 ## 2.2.0
 * Add `order_processing_method` method to `register_domain` method
 

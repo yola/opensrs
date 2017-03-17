@@ -237,6 +237,39 @@ class OpenSRS(object):
         return self._req(action='SEND_AUTHCODE', object='DOMAIN',
                          attributes={'domain_name': domain_name})
 
+    def _register_domain(self, domain, purchase_period, user, user_id,
+                         password, nameservers=None, private_reg=False,
+                         reg_domain=None, extras=None,
+                         order_processing_method=OrderProcessingMethods.SAVE):
+        extras = extras or {}
+        attrs = self._make_domain_reg_attrs(
+            domain, purchase_period, user, user_id, password, nameservers,
+            private_reg, reg_domain,
+            order_processing_method=order_processing_method, **extras)
+        if extras:
+            attrs.update(extras)
+
+        try:
+            rsp = self._sw_register_domain(attrs)
+        except errors.XCPError, e:
+            if e.response_code == self.CODE_DOMAIN_REGISTRATION_TAKEN:
+                raise errors.DomainTaken(e)
+            if e.response_code == self.CODE_DOMAIN_REGISTRATION_FAILED:
+                if (e.response_text.startswith('Invalid domain syntax') or
+                        e.response_text.startswith(
+                            'Invalid syntax on domain')):
+                    raise errors.InvalidDomain(e)
+                raise errors.DomainRegistrationFailure(e)
+            if e.response_code == self.CODE_CLIENT_TIMED_OUT:
+                raise errors.DomainRegistrationTimedOut(e)
+            raise
+
+        order_id = rsp.get_data()['attributes']['id']
+        return {
+            'domain_name': domain,
+            'registrar_data': {'ref_number': order_id}
+        }
+
     def _renew_domain(self, domain_name, current_expiration_year, period):
         attributes = {
             'auto_renew': '0',
@@ -386,34 +419,12 @@ class OpenSRS(object):
 
     def register_domain(self, domain, purchase_period, user, user_id,
                         password, nameservers=None, private_reg=False,
-                        reg_domain=None, extras=None,
-                        order_processing_method=OrderProcessingMethods.SAVE):
-        extras = extras or {}
-        attrs = self._make_domain_reg_attrs(
-            domain, purchase_period, user, user_id, password, nameservers,
-            private_reg, reg_domain,
-            order_processing_method=order_processing_method, **extras)
-        if extras:
-            attrs.update(extras)
-        try:
-            rsp = self._sw_register_domain(attrs)
-            order_id = rsp.get_data()['attributes']['id']
-            return {
-                'domain_name': domain,
-                'registrar_data': {'ref_number': order_id}
-            }
-        except errors.XCPError, e:
-            if e.response_code == self.CODE_DOMAIN_REGISTRATION_TAKEN:
-                raise errors.DomainTaken(e)
-            if e.response_code == self.CODE_DOMAIN_REGISTRATION_FAILED:
-                if (e.response_text.startswith('Invalid domain syntax') or
-                        e.response_text.startswith(
-                            'Invalid syntax on domain')):
-                    raise errors.InvalidDomain(e)
-                raise errors.DomainRegistrationFailure(e)
-            if e.response_code == self.CODE_CLIENT_TIMED_OUT:
-                raise errors.DomainRegistrationTimedOut(e)
-            raise
+                        reg_domain=None, extras=None):
+        return self._register_domain(
+            domain, purchase_period, user, user_id, password,
+            nameservers=nameservers, private_reg=private_reg,
+            reg_domain=reg_domain, extras=extras,
+            order_processing_method=OrderProcessingMethods.PROCESS)
 
     def process_pending(self, order_id, cancel=False):
         try:
