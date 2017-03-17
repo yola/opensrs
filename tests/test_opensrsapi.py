@@ -189,8 +189,9 @@ class OpenSRSTest(TestCase):
         del user_data['country']
         return DictAttrs(user_data)
 
-    def _data_domain_reg(self, domain, period, username, password):
-        return self._xcp_data('SW_REGISTER', 'DOMAIN', {
+    def _data_domain_reg(self, domain, period, username, password,
+                         **attribute_overrides):
+        attributes = {
             'reg_username': username,
             'reg_password': password,
             'domain': domain,
@@ -206,35 +207,16 @@ class OpenSRSTest(TestCase):
             'f_lock_domain': '1',
             'f_whois_privacy': '0',
             'reg_type': 'new',
-            'handle': OrderProcessingMethods.SAVE})
+            'handle': OrderProcessingMethods.SAVE
+        }
+        attributes.update(attribute_overrides)
+        return self._xcp_data('SW_REGISTER', 'DOMAIN', attributes)
 
     def _data_process_pending(self, order_id, cancel):
         attributes = {'order_id': order_id}
         if cancel:
             attributes['command'] = 'cancel'
         return self._xcp_data('PROCESS_PENDING', 'DOMAIN', attributes)
-
-    def _data_domain_reg_nameservers(self, domain, period, username, password):
-        return self._xcp_data('SW_REGISTER', 'DOMAIN', {
-            'reg_username': username,
-            'reg_password': password,
-            'domain': domain,
-            'auto_renew': '0',
-            'custom_tech_contact': '1',
-            'period': period,
-            'custom_nameservers': '1',
-            'contact_set': {
-                'owner': self._data_user_contact(),
-                'admin': self._data_user_contact(),
-                'tech': self._data_user_contact(),
-                'billing': self._data_user_contact()},
-            'f_lock_domain': '1',
-            'f_whois_privacy': '0',
-            'reg_type': 'new',
-            'handle': OrderProcessingMethods.SAVE,
-            'nameserver_list': [
-                {'name': 'ns1.example.com', 'sortorder': '1'},
-                {'name': 'ns2.example.com', 'sortorder': '2'}]})
 
     # Utility methods.
 
@@ -421,7 +403,12 @@ class OpenSRSTest(TestCase):
             'is_success': '1'}
         nameservers = ['ns1.example.com', 'ns2.example.com']
         opensrs = self.safe_opensrs(
-            self._data_domain_reg_nameservers('foo.com', '1', 'foo', 'bar'),
+            self._data_domain_reg(
+                'foo.com', '1', 'foo', 'bar', custom_nameservers='1',
+                nameserver_list=[
+                    {'name': 'ns1.example.com', 'sortorder': '1'},
+                    {'name': 'ns2.example.com', 'sortorder': '2'}]
+            ),
             response_data)
         self.mcf.add_req(
             self._data_process_pending('1065034', False), process_response)
