@@ -145,9 +145,9 @@ class OpenSRS(object):
         return attributes
 
     def _make_domain_transfer_attrs(self, domain, user, username, password,
-                                    nameservers, reg_domain):
+                                    nameservers, reg_domain, **kw):
         attributes = self._make_common_reg_attrs(domain, user, username,
-                                                 password, reg_domain)
+                                                 password, reg_domain, **kw)
         attributes.update({
             'reg_type': 'transfer',
             'custom_transfer_nameservers': '0',
@@ -293,6 +293,33 @@ class OpenSRS(object):
             raise
 
         return rsp.get_data()['attributes']['order_id']
+
+    def _transfer_domain(self, domain, user, user_id, password,
+                         nameservers=None, reg_domain=None, extras=None):
+        attrs = self._make_domain_transfer_attrs(
+            domain, user, user_id, password, nameservers, reg_domain,
+            order_processing_method=OrderProcessingMethods.SAVE)
+        if extras:
+            attrs.update(extras)
+
+        try:
+            rsp = self._sw_register_domain(attrs)
+        except errors.XCPError, e:
+            if e.response_code == self.CODE_DOMAIN_NOT_TRANSFERABLE:
+                raise errors.DomainNotTransferable(e)
+            if e.response_code == self.CODE_DOMAIN_REGISTRATION_FAILED:
+                if (e.response_text.startswith('Invalid domain syntax') or
+                        e.response_text.startswith(
+                            'Invalid syntax on domain')):
+                    raise errors.InvalidDomain(e)
+                raise errors.DomainTransferFailure(e)
+            raise
+
+        order_id = rsp.get_data()['attributes']['id']
+        return {
+            'domain_name': domain,
+            'registrar_data': {'ref_number': order_id},
+        }
 
     def _get_domains_contacts(self, domains):
         return self._req(action='GET_DOMAINS_CONTACTS', object='DOMAIN',
@@ -551,27 +578,9 @@ class OpenSRS(object):
 
     def transfer_domain(self, domain, user, user_id, password,
                         nameservers=None, reg_domain=None, extras=None):
-        try:
-            attrs = self._make_domain_transfer_attrs(
-                domain, user, user_id, password, nameservers, reg_domain)
-            if extras:
-                attrs.update(extras)
-            rsp = self._sw_register_domain(attrs)
-            order_id = rsp.get_data()['attributes']['id']
-            return {
-                'domain_name': domain,
-                'registrar_data': {'ref_number': order_id},
-            }
-        except errors.XCPError, e:
-            if e.response_code == self.CODE_DOMAIN_NOT_TRANSFERABLE:
-                raise errors.DomainNotTransferable(e)
-            if e.response_code == self.CODE_DOMAIN_REGISTRATION_FAILED:
-                if (e.response_text.startswith('Invalid domain syntax') or
-                        e.response_text.startswith(
-                            'Invalid syntax on domain')):
-                    raise errors.InvalidDomain(e)
-                raise errors.DomainTransferFailure(e)
-            raise
+        return self._transfer_domain(
+            domain, user, user_id, password, nameservers=nameservers,
+            reg_domain=reg_domain, extras=extras)
 
     def list_transfers(self, transfer_id=None, start_date=None, end_date=None):
         rsp = self._get_transfers_in(transfer_id=transfer_id,
