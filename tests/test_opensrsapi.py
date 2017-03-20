@@ -212,6 +212,19 @@ class OpenSRSTest(TestCase):
         attributes.update(attribute_overrides)
         return self._xcp_data('SW_REGISTER', 'DOMAIN', attributes)
 
+    def _get_domain_renewal_response_data(self, **attribute_overrides):
+        response_data = {
+            'response_text': '',
+            'protocol': 'XCP',
+            'response_code': '200',
+            'object': 'DOMAIN',
+            'action': 'REPLY',
+            'attributes': {},
+            'is_success': '1'
+        }
+        response_data.update(attribute_overrides)
+        return response_data
+
     def _data_process_pending(self, order_id, cancel):
         attributes = {'order_id': order_id}
         if cancel:
@@ -428,6 +441,79 @@ class OpenSRSTest(TestCase):
         self.assertTrue(osrs._is_auto_renewed(error, 'foo.co.za'))
         self.assertTrue(osrs._is_auto_renewed(error, 'bar.de'))
         self.assertFalse(osrs._is_auto_renewed(error, 'test.com'))
+
+    def test_renew_domain_fails_when_already_renewed(self):
+        opensrs = self.safe_opensrs(
+            self._xcp_data('RENEW', 'DOMAIN', {
+                'auto_renew': '0',
+                'currentexpirationyear': '2017',
+                'domain': 'foo.com',
+                'handle': OrderProcessingMethods.PROCESS,
+                'period': '1',
+            }),
+            self._get_domain_renewal_response_data(
+                response_text='Domain Already Renewed',
+                response_code='555',
+                is_success='0')
+        )
+        try:
+            opensrs.renew_domain('foo.com', '2017', '1')
+            self.fail('Expected DomainAlreadyRenewed exception.')
+        except errors.DomainAlreadyRenewed:
+            pass
+
+    def test_renew_domain_fails_when_renewal_is_not_allowed(self):
+        opensrs = self.safe_opensrs(
+            self._xcp_data('RENEW', 'DOMAIN', {
+                'auto_renew': '0',
+                'currentexpirationyear': '2017',
+                'domain': 'foo.za',
+                'handle': OrderProcessingMethods.PROCESS,
+                'period': '1',
+            }),
+            self._get_domain_renewal_response_data(
+                response_code='480',
+                is_success='0')
+        )
+        try:
+            opensrs.renew_domain('foo.za', '2017', '1')
+            self.fail('Expected DomainAlreadyRenewed exception.')
+        except errors.DomainAlreadyRenewed:
+            pass
+
+    def test_create_pending_domain_renewal_succeeds(self):
+        opensrs = self.safe_opensrs(
+            self._xcp_data('RENEW', 'DOMAIN', {
+                'auto_renew': '0',
+                'currentexpirationyear': '2017',
+                'domain': 'foo.com',
+                'handle': OrderProcessingMethods.SAVE,
+                'period': '1',
+            }),
+            self._get_domain_renewal_response_data(
+                response_text='Command completed successfully',
+                attributes={'order_id': '1065034'})
+        )
+        expected = '1065034'
+        self.assertEquals(expected, opensrs.create_pending_domain_renewal(
+            'foo.com', '2017', '1'))
+
+    def test_renew_domain_renewal_succeeds(self):
+        opensrs = self.safe_opensrs(
+            self._xcp_data('RENEW', 'DOMAIN', {
+                'auto_renew': '0',
+                'currentexpirationyear': '2017',
+                'domain': 'foo.com',
+                'handle': OrderProcessingMethods.PROCESS,
+                'period': '1',
+            }),
+            self._get_domain_renewal_response_data(
+                response_text='Command completed successfully',
+                attributes={'order_id': '1065034'})
+        )
+        expected = '1065034'
+        self.assertEquals(expected, opensrs.renew_domain(
+            'foo.com', '2017', '1'))
 
 
 class OpenSRSTestCase(TestCase):

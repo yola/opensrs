@@ -479,6 +479,10 @@ class OpenSRS(object):
         self._set_domain_whois_privacy(cookie, enable_privacy)
         return True
 
+    def create_pending_domain_renewal(self, domain, current_expiration_year,
+                                      period):
+        return self._renew_domain(domain, current_expiration_year, period)
+
     def renew_domain(self, domain, current_expiration_year, period):
         return self._renew_domain(
             domain, current_expiration_year, period,
