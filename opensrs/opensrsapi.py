@@ -270,16 +270,29 @@ class OpenSRS(object):
             'registrar_data': {'ref_number': order_id}
         }
 
-    def _renew_domain(self, domain_name, current_expiration_year, period):
+    def _renew_domain(self, domain_name, current_expiration_year, period,
+                      order_processing_method=OrderProcessingMethods.SAVE):
         attributes = {
             'auto_renew': '0',
             'currentexpirationyear': current_expiration_year,
             'domain': domain_name,
-            'handle': 'save',
+            'handle': order_processing_method,
             'period': str(period),
         }
-        return self._req(action='RENEW', object='DOMAIN',
-                         attributes=attributes)
+
+        try:
+            rsp = self._req(
+                action='RENEW', object='DOMAIN', attributes=attributes)
+        except errors.XCPError, e:
+            # We cannot control domains which are automatically renewed on
+            # OpenSRS side. Thus we always treat them as already renewed
+            # for each renewal attempt.
+            if (self._already_renewed(e) or
+                    self._is_auto_renewed(e, domain_name)):
+                raise errors.DomainAlreadyRenewed(e)
+            raise
+
+        return rsp.get_data()['attributes']['order_id']
 
     def _get_domains_contacts(self, domains):
         return self._req(action='GET_DOMAINS_CONTACTS', object='DOMAIN',
@@ -467,16 +480,9 @@ class OpenSRS(object):
         return True
 
     def renew_domain(self, domain, current_expiration_year, period):
-        try:
-            rsp = self._renew_domain(domain, current_expiration_year, period)
-            return rsp.get_data()['attributes']['order_id']
-        except errors.XCPError, e:
-            # We cannot control domains which are automatically renewed on
-            # OpenSRS side. Thus we always treat them as already renewed
-            # for each renewal attempt.
-            if self._already_renewed(e) or self._is_auto_renewed(e, domain):
-                raise errors.DomainAlreadyRenewed(e)
-            raise
+        return self._renew_domain(
+            domain, current_expiration_year, period,
+            order_processing_method=OrderProcessingMethods.PROCESS)
 
     def _already_renewed(self, e):
         return (e.response_code == self.CODE_ALREADY_RENEWED or
