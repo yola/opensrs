@@ -577,6 +577,13 @@ class OpenSRS(object):
                 }
         return domain_data
 
+    def create_pending_domain_transfer(self, domain, user, user_id, password,
+                                       nameservers=None, reg_domain=None,
+                                       extras=None):
+        return self._transfer_domain(
+            domain, user, user_id, password, nameservers=nameservers,
+            reg_domain=reg_domain, extras=extras)
+
     def transfer_domain(self, domain, user, user_id, password,
                         nameservers=None, reg_domain=None, extras=None):
         return self._transfer_domain(

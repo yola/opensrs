@@ -212,6 +212,27 @@ class OpenSRSTest(TestCase):
         attributes.update(attribute_overrides)
         return self._xcp_data('SW_REGISTER', 'DOMAIN', attributes)
 
+    def _get_domain_transfer_request_data(self, domain, username,
+                                          password, **attribute_overrides):
+        attributes = {
+            'reg_username': username,
+            'reg_password': password,
+            'domain': domain,
+            'auto_renew': '0',
+            'custom_tech_contact': '1',
+            'custom_transfer_nameservers': '0',
+            'contact_set': {
+                'owner': self._data_user_contact(),
+                'admin': self._data_user_contact(),
+                'tech': self._data_user_contact(),
+                'billing': self._data_user_contact()},
+            'f_lock_domain': '1',
+            'reg_type': 'transfer',
+            'handle': OrderProcessingMethods.SAVE
+        }
+        attributes.update(attribute_overrides)
+        return self._xcp_data('SW_REGISTER', 'DOMAIN', attributes)
+
     def _get_domain_renewal_response_data(self, **attribute_overrides):
         response_data = {
             'response_text': '',
@@ -224,6 +245,9 @@ class OpenSRSTest(TestCase):
         }
         response_data.update(attribute_overrides)
         return response_data
+
+    def _get_domain_transfer_response_data(self, **attribute_overrides):
+        return self._get_domain_renewal_response_data(**attribute_overrides)
 
     def _data_process_pending(self, order_id, cancel):
         attributes = {'order_id': order_id}
@@ -514,6 +538,85 @@ class OpenSRSTest(TestCase):
         expected = '1065034'
         self.assertEquals(expected, opensrs.renew_domain(
             'foo.com', '2017', '1'))
+
+    def test_domain_transfer_fails_when_domain_is_not_transferable(self):
+        opensrs = self.safe_opensrs(
+            self._get_domain_transfer_request_data(
+                'foo.com', 'foo', 'bar',
+                handle=OrderProcessingMethods.PROCESS),
+            self._get_domain_transfer_response_data(
+                response_code='487',
+                is_success='0')
+        )
+        try:
+            opensrs.transfer_domain(
+                'foo.com', self._objdata_user_contact(), 'foo', 'bar')
+            self.fail('Expected DomainNotTransferable exception.')
+        except errors.DomainNotTransferable:
+            pass
+
+    def test_domain_transfer_fails_when_domain_is_invalid(self):
+        opensrs = self.safe_opensrs(
+            self._get_domain_transfer_request_data(
+                'foo.com', 'foo', 'bar',
+                handle=OrderProcessingMethods.PROCESS),
+            self._get_domain_transfer_response_data(
+                response_text='Invalid domain syntax',
+                response_code='465',
+                is_success='0')
+        )
+        try:
+            opensrs.transfer_domain(
+                'foo.com', self._objdata_user_contact(), 'foo', 'bar')
+            self.fail('Expected InvalidDomain exception.')
+        except errors.InvalidDomain:
+            pass
+
+    def test_domain_transfer_failure_raises_custom_exception(self):
+        opensrs = self.safe_opensrs(
+            self._get_domain_transfer_request_data(
+                'foo.com', 'foo', 'bar',
+                handle=OrderProcessingMethods.PROCESS),
+            self._get_domain_transfer_response_data(
+                response_code='465',
+                is_success='0')
+        )
+        try:
+            opensrs.transfer_domain(
+                'foo.com', self._objdata_user_contact(), 'foo', 'bar')
+            self.fail('Expected DomainTransferFailure exception.')
+        except errors.DomainTransferFailure:
+            pass
+
+    def test_domain_transfer_succeeds(self):
+        opensrs = self.safe_opensrs(
+            self._get_domain_transfer_request_data(
+                'foo.com', 'foo', 'bar',
+                handle=OrderProcessingMethods.PROCESS),
+            self._get_domain_transfer_response_data(attributes={'id': '123'})
+        )
+        expected = {
+            'domain_name': 'foo.com',
+            'registrar_data': {'ref_number': '123'}
+        }
+        self.assertEqual(
+            expected,
+            opensrs.transfer_domain('foo.com', self._objdata_user_contact(),
+                                    'foo', 'bar'))
+
+    def test_create_pending_domain_transfer_succeeds(self):
+        opensrs = self.safe_opensrs(
+            self._get_domain_transfer_request_data('foo.com', 'foo', 'bar'),
+            self._get_domain_transfer_response_data(attributes={'id': '123'})
+        )
+        expected = {
+            'domain_name': 'foo.com',
+            'registrar_data': {'ref_number': '123'}
+        }
+        self.assertEqual(
+            expected,
+            opensrs.create_pending_domain_transfer(
+                'foo.com', self._objdata_user_contact(), 'foo', 'bar'))
 
 
 class OpenSRSTestCase(TestCase):
