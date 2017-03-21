@@ -295,10 +295,11 @@ class OpenSRS(object):
         return rsp.get_data()['attributes']['order_id']
 
     def _transfer_domain(self, domain, user, user_id, password,
-                         nameservers=None, reg_domain=None, extras=None):
+                         nameservers=None, reg_domain=None, extras=None,
+                         order_processing_method=OrderProcessingMethods.SAVE):
         attrs = self._make_domain_transfer_attrs(
             domain, user, user_id, password, nameservers, reg_domain,
-            order_processing_method=OrderProcessingMethods.SAVE)
+            order_processing_method=order_processing_method)
         if extras:
             attrs.update(extras)
 
@@ -580,7 +581,8 @@ class OpenSRS(object):
                         nameservers=None, reg_domain=None, extras=None):
         return self._transfer_domain(
             domain, user, user_id, password, nameservers=nameservers,
-            reg_domain=reg_domain, extras=extras)
+            reg_domain=reg_domain, extras=extras,
+            order_processing_method=OrderProcessingMethods.PROCESS)
 
     def list_transfers(self, transfer_id=None, start_date=None, end_date=None):
         rsp = self._get_transfers_in(transfer_id=transfer_id,
