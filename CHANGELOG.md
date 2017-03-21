@@ -2,7 +2,11 @@
 
 ## Dev
 * Add `create_pending_domain_registration` method
-* Update `register_domain` to immediately process the order
+* Add `create_pending_domain_renewal` method
+* Add `create_pending_domain_transfer` method
+* Change `register_domain` to immediately process the order
+* Change `transfer_domain` to immediately process the order
+* Change `renew_domain` to immediately process the order
 
 ## 2.2.0
 * Add `order_processing_method` parameter to `register_domain` method
