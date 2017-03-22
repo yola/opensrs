@@ -15,6 +15,24 @@ def format_date(date):
     return date.strftime('%Y-%m-%d')
 
 
+def capture_transfer_failures(fn):
+    def _capture(self, *args, **kwargs):
+        try:
+            return fn(self, *args, **kwargs)
+        except errors.XCPError, e:
+            if e.response_code == self.CODE_DOMAIN_NOT_TRANSFERABLE:
+                raise errors.DomainNotTransferable(e)
+            if e.response_code == self.CODE_DOMAIN_REGISTRATION_FAILED:
+                if (e.response_text.startswith('Invalid domain syntax') or
+                        e.response_text.startswith(
+                            'Invalid syntax on domain')):
+                    raise errors.InvalidDomain(e)
+                raise errors.DomainTransferFailure(e)
+            raise
+
+    return update_wrapper(_capture, fn)
+
+
 def capture_auth_failure(fn):
     def _transform(self, *args, **kwargs):
         try:
@@ -294,6 +312,7 @@ class OpenSRS(object):
 
         return rsp.get_data()['attributes']['order_id']
 
+    @capture_transfer_failures
     def _transfer_domain(self, domain, user, user_id, password,
                          nameservers=None, reg_domain=None, extras=None,
                          order_processing_method=OrderProcessingMethods.SAVE):
@@ -303,19 +322,7 @@ class OpenSRS(object):
         if extras:
             attrs.update(extras)
 
-        try:
-            rsp = self._sw_register_domain(attrs)
-        except errors.XCPError, e:
-            if e.response_code == self.CODE_DOMAIN_NOT_TRANSFERABLE:
-                raise errors.DomainNotTransferable(e)
-            if e.response_code == self.CODE_DOMAIN_REGISTRATION_FAILED:
-                if (e.response_text.startswith('Invalid domain syntax') or
-                        e.response_text.startswith(
-                            'Invalid syntax on domain')):
-                    raise errors.InvalidDomain(e)
-                raise errors.DomainTransferFailure(e)
-            raise
-
+        rsp = self._sw_register_domain(attrs)
         order_id = rsp.get_data()['attributes']['id']
         return {
             'domain_name': domain,
