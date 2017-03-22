@@ -4,6 +4,7 @@ from mock import Mock, patch
 
 from opensrs import opensrsapi, xcp, errors
 from opensrs.constants import OrderProcessingMethods
+from opensrs.opensrsapi import OpenSRS, is_auto_renewed
 from test_settings import CONNECTION_OPTIONS
 
 
@@ -458,14 +459,6 @@ class OpenSRSTest(TestCase):
         self.assertEquals(expected, opensrs.create_pending_domain_registration(
             'foo.com', 1, self._objdata_user_contact(), 'foo', 'bar'))
 
-    def test_is_auto_renewed(self):
-        osrs = opensrsapi.OpenSRS('host', 'port', 'user', 'key', 'timeout')
-        error = Mock(response_code=osrs.CODE_RENEWAL_IS_NOT_ALLOWED)
-
-        self.assertTrue(osrs._is_auto_renewed(error, 'foo.co.za'))
-        self.assertTrue(osrs._is_auto_renewed(error, 'bar.de'))
-        self.assertFalse(osrs._is_auto_renewed(error, 'test.com'))
-
     def test_renew_domain_fails_when_already_renewed(self):
         opensrs = self.safe_opensrs(
             self._xcp_data('RENEW', 'DOMAIN', {
@@ -617,6 +610,15 @@ class OpenSRSTest(TestCase):
             expected,
             opensrs.create_pending_domain_transfer(
                 'foo.com', self._objdata_user_contact(), 'foo', 'bar'))
+
+
+class IsAutoRenewedTestCase(TestCase):
+    def test_is_auto_renewed(self):
+        error = Mock(response_code=OpenSRS.CODE_RENEWAL_IS_NOT_ALLOWED)
+
+        self.assertTrue(is_auto_renewed(error, 'foo.co.za'))
+        self.assertTrue(is_auto_renewed(error, 'bar.de'))
+        self.assertFalse(is_auto_renewed(error, 'test.com'))
 
 
 class OpenSRSTestCase(TestCase):

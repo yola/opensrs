@@ -35,6 +35,35 @@ def capture_registration_failures(fn):
     return update_wrapper(_capture, fn)
 
 
+def is_already_renewed(e):
+    return (e.response_code == OpenSRS.CODE_ALREADY_RENEWED or
+            (e.response_code == OpenSRS.CODE_ALREADY_RENEWED_SANDBOX and
+             e.response_text.startswith(
+                 OpenSRS.MSG_ALREADY_RENEWED_SANDBOX)))
+
+
+def is_auto_renewed(e, domain_name):
+    tld = domain_name.rsplit('.', 1)[-1].lower()
+    return (e.response_code == OpenSRS.CODE_RENEWAL_IS_NOT_ALLOWED and
+            tld in AUTO_RENEWED_TLDS)
+
+
+def capture_renewal_failures(fn):
+    def _capture(self, *args, **kwargs):
+        try:
+            return fn(self, *args, **kwargs)
+        except errors.XCPError, e:
+            # We cannot control domains which are automatically renewed on
+            # OpenSRS side. Thus we always treat them as already renewed
+            # for each renewal attempt.
+            domain_name = args[0]
+            if is_already_renewed(e) or is_auto_renewed(e, domain_name):
+                raise errors.DomainAlreadyRenewed(e)
+            raise
+
+    return update_wrapper(_capture, fn)
+
+
 def capture_transfer_failures(fn):
     def _capture(self, *args, **kwargs):
         try:
@@ -295,6 +324,7 @@ class OpenSRS(object):
             'registrar_data': {'ref_number': order_id}
         }
 
+    @capture_renewal_failures
     def _renew_domain(self, domain_name, current_expiration_year, period,
                       order_processing_method=OrderProcessingMethods.SAVE):
         attributes = {
@@ -305,18 +335,7 @@ class OpenSRS(object):
             'period': str(period),
         }
 
-        try:
-            rsp = self._req(
-                action='RENEW', object='DOMAIN', attributes=attributes)
-        except errors.XCPError, e:
-            # We cannot control domains which are automatically renewed on
-            # OpenSRS side. Thus we always treat them as already renewed
-            # for each renewal attempt.
-            if (self._already_renewed(e) or
-                    self._is_auto_renewed(e, domain_name)):
-                raise errors.DomainAlreadyRenewed(e)
-            raise
-
+        rsp = self._req(action='RENEW', object='DOMAIN', attributes=attributes)
         return rsp.get_data()['attributes']['order_id']
 
     @capture_transfer_failures
@@ -529,16 +548,6 @@ class OpenSRS(object):
         return self._renew_domain(
             domain, current_expiration_year, period,
             order_processing_method=OrderProcessingMethods.PROCESS)
-
-    def _already_renewed(self, e):
-        return (e.response_code == self.CODE_ALREADY_RENEWED or
-                (e.response_code == self.CODE_ALREADY_RENEWED_SANDBOX and
-                 e.response_text.startswith(self.MSG_ALREADY_RENEWED_SANDBOX)))
-
-    def _is_auto_renewed(self, err, domain_name):
-        tld = domain_name.rsplit('.', 1)[-1].lower()
-        return (err.response_code == self.CODE_RENEWAL_IS_NOT_ALLOWED and
-                tld in AUTO_RENEWED_TLDS)
 
     def get_domains_by_expiredate(self, start_date, end_date, page=None):
         domains = []
