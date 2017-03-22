@@ -4,6 +4,7 @@ from mock import Mock, patch
 
 from opensrs import opensrsapi, xcp, errors
 from opensrs.constants import OrderProcessingMethods
+from opensrs.opensrsapi import OpenSRS, is_auto_renewed
 from test_settings import CONNECTION_OPTIONS
 
 
@@ -189,8 +190,9 @@ class OpenSRSTest(TestCase):
         del user_data['country']
         return DictAttrs(user_data)
 
-    def _data_domain_reg(self, domain, period, username, password):
-        return self._xcp_data('SW_REGISTER', 'DOMAIN', {
+    def _data_domain_reg(self, domain, period, username, password,
+                         **attribute_overrides):
+        attributes = {
             'reg_username': username,
             'reg_password': password,
             'domain': domain,
@@ -206,35 +208,53 @@ class OpenSRSTest(TestCase):
             'f_lock_domain': '1',
             'f_whois_privacy': '0',
             'reg_type': 'new',
-            'handle': OrderProcessingMethods.SAVE})
+            'handle': OrderProcessingMethods.SAVE
+        }
+        attributes.update(attribute_overrides)
+        return self._xcp_data('SW_REGISTER', 'DOMAIN', attributes)
 
-    def _data_process_pending(self, order_id, cancel):
-        attributes = {'order_id': order_id}
-        if cancel:
-            attributes['command'] = 'cancel'
-        return self._xcp_data('PROCESS_PENDING', 'DOMAIN', attributes)
-
-    def _data_domain_reg_nameservers(self, domain, period, username, password):
-        return self._xcp_data('SW_REGISTER', 'DOMAIN', {
+    def _get_domain_transfer_request_data(self, domain, username,
+                                          password, **attribute_overrides):
+        attributes = {
             'reg_username': username,
             'reg_password': password,
             'domain': domain,
             'auto_renew': '0',
             'custom_tech_contact': '1',
-            'period': period,
-            'custom_nameservers': '1',
+            'custom_transfer_nameservers': '0',
             'contact_set': {
                 'owner': self._data_user_contact(),
                 'admin': self._data_user_contact(),
                 'tech': self._data_user_contact(),
                 'billing': self._data_user_contact()},
             'f_lock_domain': '1',
-            'f_whois_privacy': '0',
-            'reg_type': 'new',
-            'handle': OrderProcessingMethods.SAVE,
-            'nameserver_list': [
-                {'name': 'ns1.example.com', 'sortorder': '1'},
-                {'name': 'ns2.example.com', 'sortorder': '2'}]})
+            'reg_type': 'transfer',
+            'handle': OrderProcessingMethods.SAVE
+        }
+        attributes.update(attribute_overrides)
+        return self._xcp_data('SW_REGISTER', 'DOMAIN', attributes)
+
+    def _get_domain_renewal_response_data(self, **attribute_overrides):
+        response_data = {
+            'response_text': '',
+            'protocol': 'XCP',
+            'response_code': '200',
+            'object': 'DOMAIN',
+            'action': 'REPLY',
+            'attributes': {},
+            'is_success': '1'
+        }
+        response_data.update(attribute_overrides)
+        return response_data
+
+    def _get_domain_transfer_response_data(self, **attribute_overrides):
+        return self._get_domain_renewal_response_data(**attribute_overrides)
+
+    def _data_process_pending(self, order_id, cancel):
+        attributes = {'order_id': order_id}
+        if cancel:
+            attributes['command'] = 'cancel'
+        return self._xcp_data('PROCESS_PENDING', 'DOMAIN', attributes)
 
     # Utility methods.
 
@@ -327,7 +347,9 @@ class OpenSRSTest(TestCase):
             'is_success': '0',
             'transaction_id': '2009-06-29 08:47:20 27585 101'}
         opensrs = self.safe_opensrs(
-            self._data_domain_reg('foo.com', '1', 'foo', 'bar'), response_data)
+            self._data_domain_reg('foo.com', '1', 'foo', 'bar',
+                                  handle=OrderProcessingMethods.PROCESS),
+            response_data)
         try:
             opensrs.register_domain('foo.com', 1, self._objdata_user_contact(),
                                     'foo', 'bar')
@@ -346,7 +368,9 @@ class OpenSRSTest(TestCase):
             'is_success': '0'
         }
         opensrs = self.safe_opensrs(
-            self._data_domain_reg('foo.com', '1', 'foo', 'bar'), response_data)
+            self._data_domain_reg('foo.com', '1', 'foo', 'bar',
+                                  handle=OrderProcessingMethods.PROCESS),
+            response_data)
         try:
             opensrs.register_domain(
                 'foo.com', 1, self._objdata_user_contact(), 'foo', 'bar')
@@ -366,24 +390,10 @@ class OpenSRSTest(TestCase):
                 'id': '1065034'
             },
             'is_success': '1'}
-        process_response = {
-            'response_text': ('Domain registration successfully completed\n'
-                              'Domain successfully locked.'),
-            'protocol': 'XCP',
-            'response_code': '200',
-            'object': 'DOMAIN',
-            'action': 'REPLY',
-            'attributes': {
-                'order_id': '1065034',
-                'lock_state': '1',
-                'id': '616784',
-                'f_auto_renew': 'N',
-                'registration expiration date': '2010-09-17 13:26:27'},
-            'is_success': '1'}
         opensrs = self.safe_opensrs(
-            self._data_domain_reg('foo.com', '1', 'foo', 'bar'), response_data)
-        self.mcf.add_req(
-            self._data_process_pending('1065034', False), process_response)
+            self._data_domain_reg('foo.com', '1', 'foo', 'bar',
+                                  handle=OrderProcessingMethods.PROCESS),
+            response_data)
         expected = {
             'domain_name': 'foo.com',
             'registrar_data': {
@@ -405,26 +415,16 @@ class OpenSRSTest(TestCase):
                 'id': '1065034'
             },
             'is_success': '1'}
-        process_response = {
-            'response_text': ('Domain registration successfully completed\n'
-                              'Domain successfully locked.'),
-            'protocol': 'XCP',
-            'response_code': '200',
-            'object': 'DOMAIN',
-            'action': 'REPLY',
-            'attributes': {
-                'order_id': '1065034',
-                'lock_state': '1',
-                'id': '616784',
-                'f_auto_renew': 'N',
-                'registration expiration date': '2010-09-17 13:26:27'},
-            'is_success': '1'}
         nameservers = ['ns1.example.com', 'ns2.example.com']
         opensrs = self.safe_opensrs(
-            self._data_domain_reg_nameservers('foo.com', '1', 'foo', 'bar'),
+            self._data_domain_reg(
+                'foo.com', '1', 'foo', 'bar', custom_nameservers='1',
+                handle=OrderProcessingMethods.PROCESS,
+                nameserver_list=[
+                    {'name': 'ns1.example.com', 'sortorder': '1'},
+                    {'name': 'ns2.example.com', 'sortorder': '2'}]
+            ),
             response_data)
-        self.mcf.add_req(
-            self._data_process_pending('1065034', False), process_response)
         expected = {
             'domain_name': 'foo.com',
             'registrar_data': {
@@ -435,13 +435,190 @@ class OpenSRSTest(TestCase):
             'foo.com', 1, self._objdata_user_contact(), 'foo', 'bar',
             nameservers=nameservers))
 
-    def test_is_auto_renewed(self):
-        osrs = opensrsapi.OpenSRS('host', 'port', 'user', 'key', 'timeout')
-        error = Mock(response_code=osrs.CODE_RENEWAL_IS_NOT_ALLOWED)
+    def test_create_pending_domain_registration_succeeds(self):
+        response_data = {
+            'response_text': 'Registration successful',
+            'protocol': 'XCP',
+            'response_code': '200',
+            'object': 'DOMAIN',
+            'action': 'REPLY',
+            'attributes': {
+                'admin_email': 'email@example.com',
+                'id': '1065034'
+            },
+            'is_success': '1'}
+        opensrs = self.safe_opensrs(
+            self._data_domain_reg('foo.com', '1', 'foo', 'bar'),
+            response_data)
+        expected = {
+            'domain_name': 'foo.com',
+            'registrar_data': {
+                'ref_number': '1065034'
+            }
+        }
+        self.assertEquals(expected, opensrs.create_pending_domain_registration(
+            'foo.com', 1, self._objdata_user_contact(), 'foo', 'bar'))
 
-        self.assertTrue(osrs._is_auto_renewed(error, 'foo.co.za'))
-        self.assertTrue(osrs._is_auto_renewed(error, 'bar.de'))
-        self.assertFalse(osrs._is_auto_renewed(error, 'test.com'))
+    def test_renew_domain_fails_when_already_renewed(self):
+        opensrs = self.safe_opensrs(
+            self._xcp_data('RENEW', 'DOMAIN', {
+                'auto_renew': '0',
+                'currentexpirationyear': '2017',
+                'domain': 'foo.com',
+                'handle': OrderProcessingMethods.PROCESS,
+                'period': '1',
+            }),
+            self._get_domain_renewal_response_data(
+                response_text='Domain Already Renewed',
+                response_code='555',
+                is_success='0')
+        )
+        try:
+            opensrs.renew_domain('foo.com', '2017', '1')
+            self.fail('Expected DomainAlreadyRenewed exception.')
+        except errors.DomainAlreadyRenewed:
+            pass
+
+    def test_renew_domain_fails_when_renewal_is_not_allowed(self):
+        opensrs = self.safe_opensrs(
+            self._xcp_data('RENEW', 'DOMAIN', {
+                'auto_renew': '0',
+                'currentexpirationyear': '2017',
+                'domain': 'foo.za',
+                'handle': OrderProcessingMethods.PROCESS,
+                'period': '1',
+            }),
+            self._get_domain_renewal_response_data(
+                response_code='480',
+                is_success='0')
+        )
+        try:
+            opensrs.renew_domain('foo.za', '2017', '1')
+            self.fail('Expected DomainAlreadyRenewed exception.')
+        except errors.DomainAlreadyRenewed:
+            pass
+
+    def test_create_pending_domain_renewal_succeeds(self):
+        opensrs = self.safe_opensrs(
+            self._xcp_data('RENEW', 'DOMAIN', {
+                'auto_renew': '0',
+                'currentexpirationyear': '2017',
+                'domain': 'foo.com',
+                'handle': OrderProcessingMethods.SAVE,
+                'period': '1',
+            }),
+            self._get_domain_renewal_response_data(
+                response_text='Command completed successfully',
+                attributes={'order_id': '1065034'})
+        )
+        expected = '1065034'
+        self.assertEquals(expected, opensrs.create_pending_domain_renewal(
+            'foo.com', '2017', '1'))
+
+    def test_renew_domain_renewal_succeeds(self):
+        opensrs = self.safe_opensrs(
+            self._xcp_data('RENEW', 'DOMAIN', {
+                'auto_renew': '0',
+                'currentexpirationyear': '2017',
+                'domain': 'foo.com',
+                'handle': OrderProcessingMethods.PROCESS,
+                'period': '1',
+            }),
+            self._get_domain_renewal_response_data(
+                response_text='Command completed successfully',
+                attributes={'order_id': '1065034'})
+        )
+        expected = '1065034'
+        self.assertEquals(expected, opensrs.renew_domain(
+            'foo.com', '2017', '1'))
+
+    def test_domain_transfer_fails_when_domain_is_not_transferable(self):
+        opensrs = self.safe_opensrs(
+            self._get_domain_transfer_request_data(
+                'foo.com', 'foo', 'bar',
+                handle=OrderProcessingMethods.PROCESS),
+            self._get_domain_transfer_response_data(
+                response_code='487',
+                is_success='0')
+        )
+        try:
+            opensrs.transfer_domain(
+                'foo.com', self._objdata_user_contact(), 'foo', 'bar')
+            self.fail('Expected DomainNotTransferable exception.')
+        except errors.DomainNotTransferable:
+            pass
+
+    def test_domain_transfer_fails_when_domain_is_invalid(self):
+        opensrs = self.safe_opensrs(
+            self._get_domain_transfer_request_data(
+                'foo.com', 'foo', 'bar',
+                handle=OrderProcessingMethods.PROCESS),
+            self._get_domain_transfer_response_data(
+                response_text='Invalid domain syntax',
+                response_code='465',
+                is_success='0')
+        )
+        try:
+            opensrs.transfer_domain(
+                'foo.com', self._objdata_user_contact(), 'foo', 'bar')
+            self.fail('Expected InvalidDomain exception.')
+        except errors.InvalidDomain:
+            pass
+
+    def test_domain_transfer_failure_raises_custom_exception(self):
+        opensrs = self.safe_opensrs(
+            self._get_domain_transfer_request_data(
+                'foo.com', 'foo', 'bar',
+                handle=OrderProcessingMethods.PROCESS),
+            self._get_domain_transfer_response_data(
+                response_code='465',
+                is_success='0')
+        )
+        try:
+            opensrs.transfer_domain(
+                'foo.com', self._objdata_user_contact(), 'foo', 'bar')
+            self.fail('Expected DomainTransferFailure exception.')
+        except errors.DomainTransferFailure:
+            pass
+
+    def test_domain_transfer_succeeds(self):
+        opensrs = self.safe_opensrs(
+            self._get_domain_transfer_request_data(
+                'foo.com', 'foo', 'bar',
+                handle=OrderProcessingMethods.PROCESS),
+            self._get_domain_transfer_response_data(attributes={'id': '123'})
+        )
+        expected = {
+            'domain_name': 'foo.com',
+            'registrar_data': {'ref_number': '123'}
+        }
+        self.assertEqual(
+            expected,
+            opensrs.transfer_domain('foo.com', self._objdata_user_contact(),
+                                    'foo', 'bar'))
+
+    def test_create_pending_domain_transfer_succeeds(self):
+        opensrs = self.safe_opensrs(
+            self._get_domain_transfer_request_data('foo.com', 'foo', 'bar'),
+            self._get_domain_transfer_response_data(attributes={'id': '123'})
+        )
+        expected = {
+            'domain_name': 'foo.com',
+            'registrar_data': {'ref_number': '123'}
+        }
+        self.assertEqual(
+            expected,
+            opensrs.create_pending_domain_transfer(
+                'foo.com', self._objdata_user_contact(), 'foo', 'bar'))
+
+
+class IsAutoRenewedTestCase(TestCase):
+    def test_is_auto_renewed(self):
+        error = Mock(response_code=OpenSRS.CODE_RENEWAL_IS_NOT_ALLOWED)
+
+        self.assertTrue(is_auto_renewed(error, 'foo.co.za'))
+        self.assertTrue(is_auto_renewed(error, 'bar.de'))
+        self.assertFalse(is_auto_renewed(error, 'test.com'))
 
 
 class OpenSRSTestCase(TestCase):

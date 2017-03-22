@@ -15,6 +15,73 @@ def format_date(date):
     return date.strftime('%Y-%m-%d')
 
 
+def capture_registration_failures(fn):
+    def _capture(self, *args, **kwargs):
+        try:
+            return fn(self, *args, **kwargs)
+        except errors.XCPError, e:
+            if e.response_code == self.CODE_DOMAIN_REGISTRATION_TAKEN:
+                raise errors.DomainTaken(e)
+            if e.response_code == self.CODE_DOMAIN_REGISTRATION_FAILED:
+                if (e.response_text.startswith('Invalid domain syntax') or
+                        e.response_text.startswith(
+                            'Invalid syntax on domain')):
+                    raise errors.InvalidDomain(e)
+                raise errors.DomainRegistrationFailure(e)
+            if e.response_code == self.CODE_CLIENT_TIMED_OUT:
+                raise errors.DomainRegistrationTimedOut(e)
+            raise
+
+    return update_wrapper(_capture, fn)
+
+
+def is_already_renewed(e):
+    return (e.response_code == OpenSRS.CODE_ALREADY_RENEWED or
+            (e.response_code == OpenSRS.CODE_ALREADY_RENEWED_SANDBOX and
+             e.response_text.startswith(
+                 OpenSRS.MSG_ALREADY_RENEWED_SANDBOX)))
+
+
+def is_auto_renewed(e, domain_name):
+    tld = domain_name.rsplit('.', 1)[-1].lower()
+    return (e.response_code == OpenSRS.CODE_RENEWAL_IS_NOT_ALLOWED and
+            tld in AUTO_RENEWED_TLDS)
+
+
+def capture_renewal_failures(fn):
+    def _capture(self, *args, **kwargs):
+        try:
+            return fn(self, *args, **kwargs)
+        except errors.XCPError, e:
+            # We cannot control domains which are automatically renewed on
+            # OpenSRS side. Thus we always treat them as already renewed
+            # for each renewal attempt.
+            domain_name = args[0]
+            if is_already_renewed(e) or is_auto_renewed(e, domain_name):
+                raise errors.DomainAlreadyRenewed(e)
+            raise
+
+    return update_wrapper(_capture, fn)
+
+
+def capture_transfer_failures(fn):
+    def _capture(self, *args, **kwargs):
+        try:
+            return fn(self, *args, **kwargs)
+        except errors.XCPError, e:
+            if e.response_code == self.CODE_DOMAIN_NOT_TRANSFERABLE:
+                raise errors.DomainNotTransferable(e)
+            if e.response_code == self.CODE_DOMAIN_REGISTRATION_FAILED:
+                if (e.response_text.startswith('Invalid domain syntax') or
+                        e.response_text.startswith(
+                            'Invalid syntax on domain')):
+                    raise errors.InvalidDomain(e)
+                raise errors.DomainTransferFailure(e)
+            raise
+
+    return update_wrapper(_capture, fn)
+
+
 def capture_auth_failure(fn):
     def _transform(self, *args, **kwargs):
         try:
@@ -145,9 +212,9 @@ class OpenSRS(object):
         return attributes
 
     def _make_domain_transfer_attrs(self, domain, user, username, password,
-                                    nameservers, reg_domain):
+                                    nameservers, reg_domain, **kw):
         attributes = self._make_common_reg_attrs(domain, user, username,
-                                                 password, reg_domain)
+                                                 password, reg_domain, **kw)
         attributes.update({
             'reg_type': 'transfer',
             'custom_transfer_nameservers': '0',
@@ -237,16 +304,56 @@ class OpenSRS(object):
         return self._req(action='SEND_AUTHCODE', object='DOMAIN',
                          attributes={'domain_name': domain_name})
 
-    def _renew_domain(self, domain_name, current_expiration_year, period):
+    @capture_registration_failures
+    def _register_domain(self, domain, purchase_period, user, user_id,
+                         password, nameservers=None, private_reg=False,
+                         reg_domain=None, extras=None,
+                         order_processing_method=OrderProcessingMethods.SAVE):
+        extras = extras or {}
+        attrs = self._make_domain_reg_attrs(
+            domain, purchase_period, user, user_id, password, nameservers,
+            private_reg, reg_domain,
+            order_processing_method=order_processing_method, **extras)
+        if extras:
+            attrs.update(extras)
+
+        rsp = self._sw_register_domain(attrs)
+        order_id = rsp.get_data()['attributes']['id']
+        return {
+            'domain_name': domain,
+            'registrar_data': {'ref_number': order_id}
+        }
+
+    @capture_renewal_failures
+    def _renew_domain(self, domain_name, current_expiration_year, period,
+                      order_processing_method=OrderProcessingMethods.SAVE):
         attributes = {
             'auto_renew': '0',
             'currentexpirationyear': current_expiration_year,
             'domain': domain_name,
-            'handle': 'save',
+            'handle': order_processing_method,
             'period': str(period),
         }
-        return self._req(action='RENEW', object='DOMAIN',
-                         attributes=attributes)
+
+        rsp = self._req(action='RENEW', object='DOMAIN', attributes=attributes)
+        return rsp.get_data()['attributes']['order_id']
+
+    @capture_transfer_failures
+    def _transfer_domain(self, domain, user, user_id, password,
+                         nameservers=None, reg_domain=None, extras=None,
+                         order_processing_method=OrderProcessingMethods.SAVE):
+        attrs = self._make_domain_transfer_attrs(
+            domain, user, user_id, password, nameservers, reg_domain,
+            order_processing_method=order_processing_method)
+        if extras:
+            attrs.update(extras)
+
+        rsp = self._sw_register_domain(attrs)
+        order_id = rsp.get_data()['attributes']['id']
+        return {
+            'domain_name': domain,
+            'registrar_data': {'ref_number': order_id},
+        }
 
     def _get_domains_contacts(self, domains):
         return self._req(action='GET_DOMAINS_CONTACTS', object='DOMAIN',
@@ -384,36 +491,23 @@ class OpenSRS(object):
             domains['search_key'] = data['search_key']
         return domains
 
+    def create_pending_domain_registration(
+            self, domain, purchase_period, user, user_id,
+            password, nameservers=None, private_reg=False,
+            reg_domain=None, extras=None):
+        return self._register_domain(
+            domain, purchase_period, user, user_id, password,
+            nameservers=nameservers, private_reg=private_reg,
+            reg_domain=reg_domain, extras=extras)
+
     def register_domain(self, domain, purchase_period, user, user_id,
                         password, nameservers=None, private_reg=False,
-                        reg_domain=None, extras=None,
-                        order_processing_method=OrderProcessingMethods.SAVE):
-        extras = extras or {}
-        attrs = self._make_domain_reg_attrs(
-            domain, purchase_period, user, user_id, password, nameservers,
-            private_reg, reg_domain,
-            order_processing_method=order_processing_method, **extras)
-        if extras:
-            attrs.update(extras)
-        try:
-            rsp = self._sw_register_domain(attrs)
-            order_id = rsp.get_data()['attributes']['id']
-            return {
-                'domain_name': domain,
-                'registrar_data': {'ref_number': order_id}
-            }
-        except errors.XCPError, e:
-            if e.response_code == self.CODE_DOMAIN_REGISTRATION_TAKEN:
-                raise errors.DomainTaken(e)
-            if e.response_code == self.CODE_DOMAIN_REGISTRATION_FAILED:
-                if (e.response_text.startswith('Invalid domain syntax') or
-                        e.response_text.startswith(
-                            'Invalid syntax on domain')):
-                    raise errors.InvalidDomain(e)
-                raise errors.DomainRegistrationFailure(e)
-            if e.response_code == self.CODE_CLIENT_TIMED_OUT:
-                raise errors.DomainRegistrationTimedOut(e)
-            raise
+                        reg_domain=None, extras=None):
+        return self._register_domain(
+            domain, purchase_period, user, user_id, password,
+            nameservers=nameservers, private_reg=private_reg,
+            reg_domain=reg_domain, extras=extras,
+            order_processing_method=OrderProcessingMethods.PROCESS)
 
     def process_pending(self, order_id, cancel=False):
         try:
@@ -446,27 +540,14 @@ class OpenSRS(object):
         self._set_domain_whois_privacy(cookie, enable_privacy)
         return True
 
+    def create_pending_domain_renewal(self, domain, current_expiration_year,
+                                      period):
+        return self._renew_domain(domain, current_expiration_year, period)
+
     def renew_domain(self, domain, current_expiration_year, period):
-        try:
-            rsp = self._renew_domain(domain, current_expiration_year, period)
-            return rsp.get_data()['attributes']['order_id']
-        except errors.XCPError, e:
-            # We cannot control domains which are automatically renewed on
-            # OpenSRS side. Thus we always treat them as already renewed
-            # for each renewal attempt.
-            if self._already_renewed(e) or self._is_auto_renewed(e, domain):
-                raise errors.DomainAlreadyRenewed(e)
-            raise
-
-    def _already_renewed(self, e):
-        return (e.response_code == self.CODE_ALREADY_RENEWED or
-                (e.response_code == self.CODE_ALREADY_RENEWED_SANDBOX and
-                 e.response_text.startswith(self.MSG_ALREADY_RENEWED_SANDBOX)))
-
-    def _is_auto_renewed(self, err, domain_name):
-        tld = domain_name.rsplit('.', 1)[-1].lower()
-        return (err.response_code == self.CODE_RENEWAL_IS_NOT_ALLOWED and
-                tld in AUTO_RENEWED_TLDS)
+        return self._renew_domain(
+            domain, current_expiration_year, period,
+            order_processing_method=OrderProcessingMethods.PROCESS)
 
     def get_domains_by_expiredate(self, start_date, end_date, page=None):
         domains = []
@@ -519,29 +600,19 @@ class OpenSRS(object):
                 }
         return domain_data
 
+    def create_pending_domain_transfer(self, domain, user, user_id, password,
+                                       nameservers=None, reg_domain=None,
+                                       extras=None):
+        return self._transfer_domain(
+            domain, user, user_id, password, nameservers=nameservers,
+            reg_domain=reg_domain, extras=extras)
+
     def transfer_domain(self, domain, user, user_id, password,
                         nameservers=None, reg_domain=None, extras=None):
-        try:
-            attrs = self._make_domain_transfer_attrs(
-                domain, user, user_id, password, nameservers, reg_domain)
-            if extras:
-                attrs.update(extras)
-            rsp = self._sw_register_domain(attrs)
-            order_id = rsp.get_data()['attributes']['id']
-            return {
-                'domain_name': domain,
-                'registrar_data': {'ref_number': order_id},
-            }
-        except errors.XCPError, e:
-            if e.response_code == self.CODE_DOMAIN_NOT_TRANSFERABLE:
-                raise errors.DomainNotTransferable(e)
-            if e.response_code == self.CODE_DOMAIN_REGISTRATION_FAILED:
-                if (e.response_text.startswith('Invalid domain syntax') or
-                        e.response_text.startswith(
-                            'Invalid syntax on domain')):
-                    raise errors.InvalidDomain(e)
-                raise errors.DomainTransferFailure(e)
-            raise
+        return self._transfer_domain(
+            domain, user, user_id, password, nameservers=nameservers,
+            reg_domain=reg_domain, extras=extras,
+            order_processing_method=OrderProcessingMethods.PROCESS)
 
     def list_transfers(self, transfer_id=None, start_date=None, end_date=None):
         rsp = self._get_transfers_in(transfer_id=transfer_id,
