@@ -15,6 +15,26 @@ def format_date(date):
     return date.strftime('%Y-%m-%d')
 
 
+def capture_registration_failures(fn):
+    def _capture(self, *args, **kwargs):
+        try:
+            return fn(self, *args, **kwargs)
+        except errors.XCPError, e:
+            if e.response_code == self.CODE_DOMAIN_REGISTRATION_TAKEN:
+                raise errors.DomainTaken(e)
+            if e.response_code == self.CODE_DOMAIN_REGISTRATION_FAILED:
+                if (e.response_text.startswith('Invalid domain syntax') or
+                        e.response_text.startswith(
+                            'Invalid syntax on domain')):
+                    raise errors.InvalidDomain(e)
+                raise errors.DomainRegistrationFailure(e)
+            if e.response_code == self.CODE_CLIENT_TIMED_OUT:
+                raise errors.DomainRegistrationTimedOut(e)
+            raise
+
+    return update_wrapper(_capture, fn)
+
+
 def capture_transfer_failures(fn):
     def _capture(self, *args, **kwargs):
         try:
@@ -255,6 +275,7 @@ class OpenSRS(object):
         return self._req(action='SEND_AUTHCODE', object='DOMAIN',
                          attributes={'domain_name': domain_name})
 
+    @capture_registration_failures
     def _register_domain(self, domain, purchase_period, user, user_id,
                          password, nameservers=None, private_reg=False,
                          reg_domain=None, extras=None,
@@ -267,21 +288,7 @@ class OpenSRS(object):
         if extras:
             attrs.update(extras)
 
-        try:
-            rsp = self._sw_register_domain(attrs)
-        except errors.XCPError, e:
-            if e.response_code == self.CODE_DOMAIN_REGISTRATION_TAKEN:
-                raise errors.DomainTaken(e)
-            if e.response_code == self.CODE_DOMAIN_REGISTRATION_FAILED:
-                if (e.response_text.startswith('Invalid domain syntax') or
-                        e.response_text.startswith(
-                            'Invalid syntax on domain')):
-                    raise errors.InvalidDomain(e)
-                raise errors.DomainRegistrationFailure(e)
-            if e.response_code == self.CODE_CLIENT_TIMED_OUT:
-                raise errors.DomainRegistrationTimedOut(e)
-            raise
-
+        rsp = self._sw_register_domain(attrs)
         order_id = rsp.get_data()['attributes']['id']
         return {
             'domain_name': domain,
