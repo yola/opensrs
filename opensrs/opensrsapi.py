@@ -349,10 +349,15 @@ class OpenSRS(object):
             attrs.update(extras)
 
         rsp = self._sw_register_domain(attrs)
-        order_id = rsp.get_data()['attributes']['id']
+        response_attributes = rsp.get_data()['attributes']
+        order_id = response_attributes['id']
+        transfer_id = response_attributes['transfer_id']
         return {
             'domain_name': domain,
-            'registrar_data': {'ref_number': order_id},
+            'registrar_data': {
+                'ref_number': order_id,
+                'transfer_id': transfer_id
+            },
         }
 
     def _get_domains_contacts(self, domains):

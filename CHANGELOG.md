@@ -1,5 +1,9 @@
 # [Changelog](https://github.com/yola/opensrs/releases)
 
+## Dev
+* Return `transfer_id` from `transfer_domain` and
+    `create_pending_domain_transfer`
+
 ## 3.0.0
 * Add `create_pending_domain_registration` method
 * Add `create_pending_domain_renewal` method

@@ -586,11 +586,15 @@ class OpenSRSTest(TestCase):
             self._get_domain_transfer_request_data(
                 'foo.com', 'foo', 'bar',
                 handle=OrderProcessingMethods.PROCESS),
-            self._get_domain_transfer_response_data(attributes={'id': '123'})
+            self._get_domain_transfer_response_data(
+                attributes={'id': '123', 'transfer_id': '456'})
         )
         expected = {
             'domain_name': 'foo.com',
-            'registrar_data': {'ref_number': '123'}
+            'registrar_data': {
+                'ref_number': '123',
+                'transfer_id': '456'
+            }
         }
         self.assertEqual(
             expected,
@@ -600,11 +604,15 @@ class OpenSRSTest(TestCase):
     def test_create_pending_domain_transfer_succeeds(self):
         opensrs = self.safe_opensrs(
             self._get_domain_transfer_request_data('foo.com', 'foo', 'bar'),
-            self._get_domain_transfer_response_data(attributes={'id': '123'})
+            self._get_domain_transfer_response_data(
+                attributes={'id': '123', 'transfer_id': '456'})
         )
         expected = {
             'domain_name': 'foo.com',
-            'registrar_data': {'ref_number': '123'}
+            'registrar_data': {
+                'ref_number': '123',
+                'transfer_id': '456'
+            }
         }
         self.assertEqual(
             expected,
