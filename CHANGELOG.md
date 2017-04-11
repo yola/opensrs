@@ -1,5 +1,8 @@
 # [Changelog](https://github.com/yola/opensrs/releases)
 
+## Dev
+* Fix `transfer_id` KeyError on pending domain transfer orders
+
 ## 3.0.1
 * Return `transfer_id` from `transfer_domain` and
     `create_pending_domain_transfer`

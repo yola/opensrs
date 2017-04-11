@@ -351,7 +351,7 @@ class OpenSRS(object):
         rsp = self._sw_register_domain(attrs)
         response_attributes = rsp.get_data()['attributes']
         order_id = response_attributes['id']
-        transfer_id = response_attributes['transfer_id']
+        transfer_id = response_attributes.get('transfer_id')
         return {
             'domain_name': domain,
             'registrar_data': {
