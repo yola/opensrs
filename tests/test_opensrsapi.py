@@ -605,13 +605,13 @@ class OpenSRSTest(TestCase):
         opensrs = self.safe_opensrs(
             self._get_domain_transfer_request_data('foo.com', 'foo', 'bar'),
             self._get_domain_transfer_response_data(
-                attributes={'id': '123', 'transfer_id': '456'})
+                attributes={'id': '123'})
         )
         expected = {
             'domain_name': 'foo.com',
             'registrar_data': {
                 'ref_number': '123',
-                'transfer_id': '456'
+                'transfer_id': None,
             }
         }
         self.assertEqual(
