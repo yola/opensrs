@@ -679,7 +679,7 @@ class OpenSRS(object):
         }
         if nameserver_list is not None:
             attributes['nameserver_list'] = self.make_nameserver_list(
-                                nameserver_list)
+                nameserver_list)
         return self._req(action='SIMPLE_TRANSFER', object='DOMAIN',
                          attributes=attributes)
 
