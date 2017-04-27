@@ -673,7 +673,24 @@ class OpenSRS(object):
     def activate_domain(self, cookie, domain):
         return self._activate_domain(cookie, domain).get_data()
 
-    def bulk_domain_transfer(self, domains_list, recipient):
+    def bulk_simple_transfer(self, domain_list, nameserver_list=None):
+        attributes = {
+            'domain_list': domain_list,
+        }
+        if nameserver_list is not None:
+            attributes['nameserver_list'] = self.make_nameserver_list(
+                                nameserver_list)
+        return self._req(action='SIMPLE_TRANSFER', object='DOMAIN',
+                         attributes=attributes)
+
+    def bulk_simple_transfer_status(self, simple_transfer_job_id):
+        attributes = {
+            'simple_transfer_job_id': simple_transfer_job_id,
+        }
+        return self._req(action='SIMPLE_TRANSFER_STATUS', object='DOMAIN',
+                         attributes=attributes)
+
+    def bulk_domain_change(self, domains_list, recipient):
         attributes = {
             'change_items': domains_list,
             'gaining_reseller_username': recipient,
