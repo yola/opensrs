@@ -673,7 +673,7 @@ class OpenSRS(object):
     def activate_domain(self, cookie, domain):
         return self._activate_domain(cookie, domain).get_data()
 
-    def bulk_simple_transfer(self, domain_list, nameserver_list=None):
+    def simple_transfer(self, domain_list, nameserver_list=None):
         attributes = {
             'domain_list': domain_list,
         }
@@ -683,7 +683,7 @@ class OpenSRS(object):
         return self._req(action='SIMPLE_TRANSFER', object='DOMAIN',
                          attributes=attributes)
 
-    def bulk_simple_transfer_status(self, simple_transfer_job_id):
+    def get_simple_transfer_status(self, simple_transfer_job_id):
         attributes = {
             'simple_transfer_job_id': simple_transfer_job_id,
         }
