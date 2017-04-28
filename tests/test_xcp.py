@@ -166,4 +166,4 @@ class XCPMessageTest(TestCase):
                                     object='DOMAIN',
                                     attributes={'domain': 'jerith.org'})
         self.assertEqual('001806d5425a40aaaec238ffe23bc8f2',
-                         lookup_msg.sign('somekey'))
+                         lookup_msg.sign('somekey'.encode('UTF-8')))

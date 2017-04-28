@@ -48,7 +48,6 @@ class XCPChannelPlaygroundTest(TestCase):
                                            })
         channel = opensrsapi.XCPChannel(**CONNECTION_OPTIONS)
         rsp = channel.make_request(lookup_msg)
-        print rsp.get_data()
         self.assertEqual('1', rsp.get_data()['is_success'])
         raise Exception()
 
