@@ -1,5 +1,11 @@
 # [Changelog](https://github.com/yola/opensrs/releases)
 
+## 4.0.0
+* Add Python 3 support
+* Add `OpenSRS.simple_transfer()` and `OpenSRS.get_simple_transfer_status()`
+  methods
+* Rename `OpenSRS.bulk_domain_transfer()` to `OpenSRS.bulk_domain_change()`
+
 ## 3.0.2
 * Fix `transfer_id` KeyError on pending domain transfer orders
 
