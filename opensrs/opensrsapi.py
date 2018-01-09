@@ -59,7 +59,6 @@ def capture_renewal_failures(fn):
             domain_name = args[0]
             if is_already_renewed(e) or is_auto_renewed(e, domain_name):
                 raise errors.DomainAlreadyRenewed(e)
-
             raise
 
     return update_wrapper(_capture, fn)
