@@ -1,5 +1,8 @@
 # [Changelog](https://github.com/yola/opensrs/releases)
 
+## 4.0.1
+* Add graceful handling of one more domain redeem error.
+
 ## 4.0.0
 * Add Python 3 support
 * Add `OpenSRS.simple_transfer()` and `OpenSRS.get_simple_transfer_status()`

@@ -59,6 +59,7 @@ def capture_renewal_failures(fn):
             domain_name = args[0]
             if is_already_renewed(e) or is_auto_renewed(e, domain_name):
                 raise errors.DomainAlreadyRenewed(e)
+
             raise
 
     return update_wrapper(_capture, fn)
@@ -113,6 +114,7 @@ class OpenSRS(object):
     CODE_ALREADY_RENEWED_SANDBOX = '465'
     CODE_RENEWAL_IS_NOT_ALLOWED = '480'
     CODE_CANNOT_REDEEM_DOMAIN = '400'
+    CODE_REDEEM_NOT_SUPPORTED_FOR_TLD = '462'
     CODE_CANNOT_PUSH_DOMAIN = '465'
 
     CODE_CLIENT_TIMED_OUT = '705'
@@ -732,7 +734,9 @@ class OpenSRS(object):
                 redeem_resp['redeem_success'] = True
                 return redeem_resp
         except errors.XCPError as e:
-            if e.response_code == self.CODE_CANNOT_REDEEM_DOMAIN:
+            if e.response_code in (
+                    self.CODE_CANNOT_REDEEM_DOMAIN,
+                    self.CODE_REDEEM_NOT_SUPPORTED_FOR_TLD):
                 log.info(('opensrsapi.redeem_domain fail domain_name=%s '
                           'error=%s code=%s'), domain, e.response_text,
                          e.response_code)
