@@ -1,7 +1,7 @@
 # [Changelog](https://github.com/yola/opensrs/releases)
 
 ## 4.0.1
-* Add graceful handling of one more domain redeem error.
+* Add graceful handling of one more domain redemption error.
 
 ## 4.0.0
 * Add Python 3 support
