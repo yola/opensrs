@@ -779,3 +779,13 @@ class OpenSRS(object):
             action='MODIFY', object='DOMAIN', attributes=attributes,
             cookie=cookie
         )
+
+    def disable_parked_pages_service(self, cookie, domain_name):
+        attributes = {
+            'data': 'parkpage_state',
+            'domain': domain_name,
+            'state': 'off'
+        }
+
+        self._req(action='MODIFY', object='DOMAIN', attributes=attributes,
+                  cookie=cookie)
