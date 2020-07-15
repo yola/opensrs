@@ -237,12 +237,12 @@ class OpenSRS(object):
         return self._req(action='ADVANCED_UPDATE_NAMESERVERS', object='DOMAIN',
                          cookie=cookie, attributes=attributes)
 
-    def _name_suggest_domain(self, search_string, tlds, maximum=None,
+    def _name_suggest_domain(self, search_string, tlds, services, maximum=None,
                              max_wait_time=None, search_key=None):
         attributes = {
             'searchstring': search_string,
             'tlds': tlds,
-            'services': ['lookup', 'suggestion'],
+            'services': services,
         }
         if max_wait_time is not None:
             attributes['max_wait_time'] = str(max_wait_time)
@@ -467,12 +467,14 @@ class OpenSRS(object):
         return (attribs['transferrable'] == '1', attribs.get('reason', None))
 
     def suggest_domains(self, search_string, tlds, maximum=None,
-                        max_wait_time=None, search_key=None):
-        rsp = self._name_suggest_domain(search_string, tlds, maximum,
+                        max_wait_time=None, search_key=None, services=None):
+        if services is None:
+            services = ['lookup', 'suggestion']
+        rsp = self._name_suggest_domain(search_string, tlds, services, maximum,
                                         max_wait_time, search_key)
         data = rsp.get_data()
         domains = {}
-        for k in ['lookup', 'suggestion']:
+        for k in services:
             domrsp = data['attributes'].get(k, None)
             domains[k] = []
             if domrsp is None:
