@@ -1,6 +1,6 @@
 # [Changelog](https://github.com/yola/opensrs/releases)
 
-## 4.1.1
+## 4.2.0
 * Allow to specify `services` to `OpenSRS.suggest_domains()`.
 
 ## 4.1.0
