@@ -1,6 +1,5 @@
 import hashlib
 import logging
-import decimal
 try:
     from urllib.request import urlopen, Request
 except ImportError:
