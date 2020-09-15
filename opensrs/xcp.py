@@ -1,5 +1,6 @@
 import hashlib
 import logging
+import decimal
 try:
     from urllib.request import urlopen, Request
 except ImportError:
@@ -112,8 +113,10 @@ class XCPMessage(object):
             'protocol': 'XCP',
             'action': action,
             'object': object,
-            'attributes': attributes,
         }
+        if attributes is not None:
+            data['attributes'] = attributes
+
         data.update(kw)
 
         self.ops_message = OPSMessage(data=data)
