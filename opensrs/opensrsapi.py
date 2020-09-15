@@ -794,7 +794,9 @@ class OpenSRS(object):
                   cookie=cookie)
 
     def get_balance(self):
-        attributes = self._req(action='GET_BALANCE', object='BALANCE', attributes=None).get_data()['attributes']
+        attributes = self._req(
+            action='GET_BALANCE', object='BALANCE', attributes=None
+        ).get_data()['attributes']
 
         balance = decimal.Decimal(attributes['balance'])
         hold_balance = decimal.Decimal(attributes['hold_balance'])
