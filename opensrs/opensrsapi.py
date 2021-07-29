@@ -119,16 +119,17 @@ class OpenSRS(object):
 
     MSG_ALREADY_RENEWED_SANDBOX = 'Domain Already Renewed'
 
-    def __init__(self, host, port, username, private_key, default_timeout):
+    def __init__(self, host, port, username, private_key, default_timeout, proxy=None):
         self.host = host
         self.port = port
         self.username = username
         self.private_key = private_key
         self.default_timeout = default_timeout
+        self.proxy = proxy
 
     def _get_channel(self):
         return XCPChannel(self.host, self.port, self.username,
-            self.private_key, self.default_timeout)
+            self.private_key, self.default_timeout, proxy=self.proxy)
 
     def _req(self, action, object, attributes, **kw):
         msg = XCPMessage(action, object, attributes, **kw)

@@ -4,3 +4,4 @@ funcsigs < 0.5
 mock < 1.2.0
 nose < 2.0.0
 python-dateutil == 2.5.3
+requests

@@ -1,9 +1,6 @@
 import hashlib
 import logging
-try:
-    from urllib.request import urlopen, Request
-except ImportError:
-    from urllib2 import urlopen, Request
+import requests
 from xml.etree import ElementTree as ET
 
 from opensrs.errors import XCPError
@@ -128,27 +125,33 @@ class XCPMessage(object):
 
 
 class XCPChannel(object):
-    def __init__(self, host, port, username, private_key, default_timeout):
+    def __init__(self, host, port, username, private_key, default_timeout, proxy=None):
         self.host = host
         self.port = port
         self.username = username
         self.private_key = private_key.encode('UTF-8')
         self.default_timeout = default_timeout
+        self.proxy = proxy
 
     def _make_call(self, message):
         """All network interaction is isolated here for stubbing out."""
-        request = Request('https://%s:%s/' % (self.host, self.port))
         headers = {
             'Content-Type': 'text/xml',
             'X-Username': self.username,
             'X-Signature': message.sign(self.private_key),
         }
-        [request.add_header(k, v) for k, v in headers.items()]
-
         timeout = message.timeout or self.default_timeout
         log.debug('Making XCP call with timeout = %s', timeout)
-        xml = urlopen(request, message.get_content(), timeout).read()
-        return OPSMessage(xml=xml)
+        request_args = {
+            "url": 'https://%s:%s/' % (self.host, self.port),
+            "headers": headers,
+            "params": message.get_content(),
+            "timeout": timeout,
+        }
+        if self.proxy:
+            request_args["proxies"] = {"http": self.proxy}
+        response = requests.get(**request_args)
+        return OPSMessage(xml=response.content)
 
     def make_request(self, message):
         log.debug('OpenSRS Request: %s' % repr(message.get_content()))
