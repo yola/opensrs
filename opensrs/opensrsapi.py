@@ -1,5 +1,6 @@
 from functools import update_wrapper
 import logging
+import decimal
 
 from demands.pagination import PaginatedResults, RESULTS_KEY
 
@@ -791,3 +792,20 @@ class OpenSRS(object):
 
         self._req(action='MODIFY', object='DOMAIN', attributes=attributes,
                   cookie=cookie)
+
+    def get_balance(self):
+        attributes = self._req(
+            action='GET_BALANCE', object='BALANCE', attributes=None
+        ).get_data()['attributes']
+
+        balance = decimal.Decimal(attributes['balance'])
+        hold_balance = decimal.Decimal(attributes['hold_balance'])
+        available_balance = balance - hold_balance
+        if available_balance < 0:
+            available_balance = 0
+
+        return {
+            'balance': balance,
+            'hold_balance': hold_balance,
+            'available_balance': available_balance
+        }
