@@ -87,17 +87,16 @@ class OPSMessage(object):
         if not ET.iselement(base_node):
             return base_node
         if base_node.tag == 'item':
-            if base_node.getchildren() == []:
+            if list(base_node) == []:
                 return base_node.text
             return self.get_data(base_node[0])
         if base_node.tag == 'dt_array':
-            indexed_children = [(e.get('key'), e) for e in
-                                base_node.getchildren()]
+            indexed_children = [(e.get('key'), e) for e in base_node]
             indexed_children.sort()
             return [self.get_data(e) for i, e in indexed_children]
         if base_node.tag == 'dt_assoc':
             data = {}
-            for e in base_node.getchildren():
+            for e in base_node:
                 data[e.get('key')] = self.get_data(e)
             return data
         if base_node.tag == 'dt_scalar':
