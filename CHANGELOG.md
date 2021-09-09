@@ -1,5 +1,9 @@
 # [Changelog](https://github.com/yola/opensrs/releases)
 
+## 4.3.0
+* Add Python 3.9 support.
+* Add `OpenSRS.get_balance()` method.
+
 ## 4.2.0
 * Allow to specify `services` to `OpenSRS.suggest_domains()`.
 
