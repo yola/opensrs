@@ -136,8 +136,8 @@ class OpenSRS(object):
         return self._get_channel().make_request(msg)
 
     def make_contact(self, user, domain, **kw):
-        org_name = kw.get('orgname') or ' '.join([user.first_name,
-                                                  user.last_name])
+        org_name = kw.get(
+            'orgname', '{} {}'.format(user.first_name, user.last_name))
         return {
             'first_name': user.first_name,
             'last_name': user.last_name,

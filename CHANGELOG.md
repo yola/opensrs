@@ -1,5 +1,8 @@
 # [Changelog](https://github.com/yola/opensrs/releases)
 
+## 4.3.1
+* Allow blank 'orgname' param.
+
 ## 4.3.0
 * Add Python 3.9 support.
 * Add `OpenSRS.get_balance()` method.
