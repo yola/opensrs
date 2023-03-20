@@ -1,7 +1,7 @@
 # [Changelog](https://github.com/yola/opensrs/releases)
 
 ## 4.3.2
-* Fix using non ascii symbols for "org_name" generated from user name.
+* Fix using non-ascii symbols for "org_name" generated from user's name.
 
 ## 4.3.1
 * Allow blank 'orgname' param.
