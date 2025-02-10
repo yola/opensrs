@@ -238,8 +238,10 @@ class OpenSRS(object):
         return self._req(action='ADVANCED_UPDATE_NAMESERVERS', object='DOMAIN',
                          cookie=cookie, attributes=attributes)
 
-    def _name_suggest_domain(self, search_string, tlds, services, maximum=None,
-                             max_wait_time=None, search_key=None):
+    def _name_suggest_domain(
+        self, search_string, tlds, services, maximum=None, max_wait_time=None,
+        search_key=None, service_override=None
+    ):
         attributes = {
             'searchstring': search_string,
             'tlds': tlds,
@@ -251,9 +253,25 @@ class OpenSRS(object):
             attributes['search_key'] = search_key
         if maximum is not None:
             attributes['maximum'] = str(maximum)
-        return self._req(action='NAME_SUGGEST',
-                         object='DOMAIN',
-                         attributes=attributes)
+        if service_override is not None:
+            attributes['service_override'] = service_override
+        return self._req(
+            action='NAME_SUGGEST',
+            object='DOMAIN',
+            attributes=attributes
+        )
+
+    def _resume_name_suggest_domain(self, search_key, max_wait_time=None):
+        attributes = {
+            'search_key': search_key
+        }
+        if max_wait_time is not None:
+            attributes['max_wait_time'] = str(max_wait_time)
+        return self._req(
+            action='NAME_SUGGEST',
+            object='DOMAIN',
+            attributes=attributes
+        )
 
     def _process_pending(self, order_id, cancel=False):
         attributes = {
@@ -467,12 +485,7 @@ class OpenSRS(object):
         attribs = rsp.get_data()['attributes']
         return (attribs['transferrable'] == '1', attribs.get('reason', None))
 
-    def suggest_domains(self, search_string, tlds, maximum=None,
-                        max_wait_time=None, search_key=None, services=None):
-        if services is None:
-            services = ['lookup', 'suggestion']
-        rsp = self._name_suggest_domain(search_string, tlds, services, maximum,
-                                        max_wait_time, search_key)
+    def _process_domain_suggestions(self, rsp, services):
         data = rsp.get_data()
         domains = {}
         for k in services:
@@ -498,6 +511,26 @@ class OpenSRS(object):
         if data.get('is_search_completed', '1') == '0':
             domains['search_key'] = data['search_key']
         return domains
+
+    def suggest_domains(
+        self, search_string, tlds, maximum=None, max_wait_time=None,
+        search_key=None, services=None, service_override=None
+    ):
+        if services is None:
+            services = ['lookup', 'suggestion']
+        rsp = self._name_suggest_domain(
+            search_string, tlds, services, maximum, max_wait_time, search_key,
+            service_override
+        )
+        return self._process_domain_suggestions(rsp, services)
+
+    def resume_suggest_domains(
+        self, search_key, max_wait_time=None, services=None
+    ):
+        if services is None:
+            services = ['lookup', 'suggestion']
+        rsp = self._resume_name_suggest_domain(search_key, max_wait_time)
+        return self._process_domain_suggestions(rsp, services)
 
     def create_pending_domain_registration(
             self, domain, purchase_period, user, user_id,
