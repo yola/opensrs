@@ -238,8 +238,10 @@ class OpenSRS(object):
         return self._req(action='ADVANCED_UPDATE_NAMESERVERS', object='DOMAIN',
                          cookie=cookie, attributes=attributes)
 
-    def _name_suggest_domain(self, search_string, tlds, services, maximum=None,
-                             max_wait_time=None, search_key=None):
+    def _name_suggest_domain(
+        self, search_string, tlds, services, maximum=None, max_wait_time=None,
+        search_key=None, service_override=None
+    ):
         attributes = {
             'searchstring': search_string,
             'tlds': tlds,
@@ -251,9 +253,13 @@ class OpenSRS(object):
             attributes['search_key'] = search_key
         if maximum is not None:
             attributes['maximum'] = str(maximum)
-        return self._req(action='NAME_SUGGEST',
-                         object='DOMAIN',
-                         attributes=attributes)
+        if service_override is not None:
+            attributes['service_override'] = service_override
+        return self._req(
+            action='NAME_SUGGEST',
+            object='DOMAIN',
+            attributes=attributes
+        )
 
     def _process_pending(self, order_id, cancel=False):
         attributes = {
@@ -467,12 +473,16 @@ class OpenSRS(object):
         attribs = rsp.get_data()['attributes']
         return (attribs['transferrable'] == '1', attribs.get('reason', None))
 
-    def suggest_domains(self, search_string, tlds, maximum=None,
-                        max_wait_time=None, search_key=None, services=None):
+    def suggest_domains(
+        self, search_string, tlds, maximum=None, max_wait_time=None,
+        search_key=None, services=None, service_override=None
+    ):
         if services is None:
             services = ['lookup', 'suggestion']
-        rsp = self._name_suggest_domain(search_string, tlds, services, maximum,
-                                        max_wait_time, search_key)
+        rsp = self._name_suggest_domain(
+            search_string, tlds, services, maximum, max_wait_time, search_key,
+            service_override
+        )
         data = rsp.get_data()
         domains = {}
         for k in services:

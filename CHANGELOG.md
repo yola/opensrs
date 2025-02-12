@@ -1,5 +1,8 @@
 # [Changelog](https://github.com/yola/opensrs/releases)
 
+## 4.4.0
+* Allow to specify `service_override` in `OpenSRS.suggest_domains()`.
+
 ## 4.3.2
 * Fix using non-ascii symbols for "org_name" generated from user's name.
 
