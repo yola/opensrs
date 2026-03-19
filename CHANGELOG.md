@@ -1,5 +1,8 @@
 # [Changelog](https://github.com/yola/opensrs/releases)
 
+## 4.5.0
+* Change required `demands` versions to ">= 5.0.0, < 6.0.0".
+
 ## 4.4.0
 * Allow to specify `service_override` in `OpenSRS.suggest_domains()`.
 
